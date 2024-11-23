@@ -1,33 +1,57 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import { fetchUser, login as authLogin, logout as authLogout } from '../utils/auth';
+import { useRouter, usePathname } from 'next/navigation';
 
-export const AuthContext = createContext();
+// 创建 AuthContext
+const AuthContext = createContext();
 
+// AuthProvider 组件
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const router = useRouter();
+    const pathname = usePathname();
 
     useEffect(() => {
-        axios.get('/api/auth/me', { withCredentials: true })
-            .then(response => {
-                setUser(response.data.user);
-            })
-            .catch(() => {
-                setUser(null);
-            })
-            .finally(() => setLoading(false));
-    }, []);
+        console.log("Current pathname:", pathname);
+        const initializeUser = async () => {
+            if (pathname === '/login') {
+                setLoading(false);
+                return;
+            }
 
-    const login = async (email, password) => {
-        const response = await axios.post('/api/auth/login', { email, password }, { withCredentials: true });
-        setUser(response.data.user);
+            try {
+                const userData = await fetchUser();
+                setUser(userData);
+            } catch (error) {
+                setUser(null);
+            } finally {
+                setLoading(false);
+            }
+        };
+        initializeUser();
+    }, [pathname]);
+
+    const login = async (username, password) => {
+        try {
+            const userData = await authLogin(username, password);
+            setUser(userData);
+        } catch (error) {
+            console.error('登录失败:', error);
+            throw error;
+        }
     };
 
     const logout = async () => {
-        await axios.post('/api/auth/logout', {}, { withCredentials: true });
-        setUser(null);
+        try {
+            await authLogout();
+            setUser(null);
+            router.push('/login');
+        } catch (error) {
+            console.error('登出错误:', error);
+        }
     };
 
     return (
@@ -37,4 +61,5 @@ export const AuthProvider = ({ children }) => {
     );
 };
 
+// 自定义 useAuth 钩子
 export const useAuth = () => useContext(AuthContext);

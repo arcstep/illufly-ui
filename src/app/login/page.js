@@ -1,9 +1,8 @@
-// src/app/login/page.js
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import useAuth from '../../hooks/useAuth'; // 默认导出，无需大括号
+import { useAuth } from '../../context/AuthContext';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -35,7 +34,7 @@ export default function LoginPage() {
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
             <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-center">登录</h1>
+                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-center">✨🦋 登录</h1>
                 <form onSubmit={handleSubmit}>
                     <div className="mb-4">
                         <label htmlFor="email" className="block text-gray-700 mb-2">

@@ -1,28 +1,20 @@
 import { NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET;
+export function middleware(req) {
+    const { pathname } = req.nextUrl;
+    const token = req.cookies.get('access_token'); // 使用正确的 cookie 名称
 
-export function middleware(request) {
-    const token = request.cookies.get('access_token');
-    const protectedRoutes = ['/dashboard', '/profile'];
+    // 定义需要鉴权的路径
+    const protectedPaths = ['/dashboard', '/profile', '/settings'];
 
-    if (protectedRoutes.some(route => request.nextUrl.pathname.startsWith(route))) {
-        if (!token) {
-            return NextResponse.redirect(new URL('/login', request.url));
-        }
+    // 检查请求路径是否需要鉴权
+    const isProtectedPath = protectedPaths.some((path) => pathname.startsWith(path));
 
-        try {
-            jwt.verify(token, JWT_SECRET);
-            return NextResponse.next();
-        } catch (error) {
-            return NextResponse.redirect(new URL('/login', request.url));
-        }
+    // 如果路径需要鉴权且没有 token，则重定向到登录页
+    if (isProtectedPath && !token) {
+        return NextResponse.redirect(new URL('/login', req.url));
     }
 
+    // 继续处理请求
     return NextResponse.next();
-}
-
-export const config = {
-    matcher: ['/dashboard/:path*', '/profile/:path*'],
-};
+} 

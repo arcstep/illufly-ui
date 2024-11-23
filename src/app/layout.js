@@ -1,10 +1,8 @@
 // src/app/layout.js
 'use client';
 
-import { AuthProvider } from '../context/AuthContext'; // 命名导出，应使用大括号
-import Header from '../components/Header';
-import Footer from '../components/Footer';
 import '../app/globals.css';
+import { AuthProvider } from '../context/AuthContext';
 
 export default function RootLayout({ children }) {
   return (
@@ -12,9 +10,7 @@ export default function RootLayout({ children }) {
       <head />
       <body>
         <AuthProvider>
-          <Header />
           <main>{children}</main>
-          <Footer />
         </AuthProvider>
       </body>
     </html>

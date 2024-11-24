@@ -8,8 +8,8 @@ export default function Dashboard() {
     const { user, loading, logout } = useAuth();
     const [data, setData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [isFirstColumnVisible, setIsFirstColumnVisible] = useState(true);
-    const [isSecondColumnVisible, setIsSecondColumnVisible] = useState(true);
+    const [isFirstColumnVisible, setIsFirstColumnVisible] = useState(false);
+    const [isSecondColumnVisible, setIsSecondColumnVisible] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -30,7 +30,7 @@ export default function Dashboard() {
     if (!user) return null;
 
     return (
-        <div className="p-8">
+        <div className="p-8 h-screen flex flex-col">
             <header className="flex justify-between items-center mb-4">
                 <h1 className="text-2xl font-bold">对话应用</h1>
                 <div>
@@ -48,7 +48,7 @@ export default function Dashboard() {
                     </button>
                 </div>
             </header>
-            <div className="flex">
+            <div className="flex flex-1">
                 {isFirstColumnVisible && (
                     <div className="w-1/6 p-4 border-r">
                         <h2 className="text-xl font-bold mb-4">智能体清单</h2>
@@ -56,7 +56,7 @@ export default function Dashboard() {
                     </div>
                 )}
                 {isSecondColumnVisible && (
-                    <div className="w-1/3 p-4 border-r">
+                    <div className="w-1/6 p-4 border-r">
                         <h2 className="text-xl font-bold mb-4">对话轮次历史</h2>
                         {/* 在这里添加对话轮次历史内容 */}
                     </div>
@@ -67,13 +67,7 @@ export default function Dashboard() {
                         <h3 className="text-lg font-bold">消息历史</h3>
                         {/* 在这里添加消息历史内容 */}
                     </div>
-                    <div>
-                        <h3 className="text-lg font-bold">消息输入</h3>
-                        <textarea
-                            className="w-full p-2 border rounded mb-2"
-                            rows="4"
-                            placeholder="输入你的消息..."
-                        ></textarea>
+                    <div className="sticky bottom-0 bg-white">
                         <input
                             type="file"
                             className="mb-2"
@@ -83,9 +77,28 @@ export default function Dashboard() {
                                 console.log('上传的文件:', files);
                             }}
                         />
-                        <button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-                            发送
-                        </button>
+                        <div className="flex items-center">
+                            <textarea
+                                className="flex-1 p-2 border rounded"
+                                rows="1"
+                                style={{ maxHeight: '10em', resize: 'none', overflowY: 'auto' }}
+                                placeholder="输入你的消息..."
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        // 在这里处理发送消息的逻辑
+                                    }
+                                }}
+                                onInput={(e) => {
+                                    const textarea = e.target;
+                                    textarea.style.height = 'auto'; // 重置高度
+                                    textarea.style.height = `${Math.min(textarea.scrollHeight, 160)}px`; // 动态调整高度，最大为 10 行
+                                }}
+                            ></textarea>
+                            <button className="bg-blue-500 text-white px-4 py-2 ml-2 rounded hover:bg-blue-600">
+                                发送
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

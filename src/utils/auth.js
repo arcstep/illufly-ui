@@ -27,6 +27,10 @@ export const logout = async () => {
     try {
         await api.post('/api/logout', {}, { withCredentials: true });
     } catch (error) {
+        if (error.response && error.response.status === 401) {
+            // 如果返回401，认为是正常退出
+            return;
+        }
         throw new Error('登出失败');
     }
 };

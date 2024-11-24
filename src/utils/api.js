@@ -21,9 +21,14 @@ api.interceptors.response.use(
                 return api(originalRequest);
             } catch (err) {
                 // 清除本地状态并重定向到登录页
+                // 这里后端在返回 401 时会清除 http_only cookies
+                // 你可以在这里添加任何需要的本地状态清理逻辑
                 Router.push('/login');
                 return Promise.reject(err);
             }
+        } else if (error.response && error.response.status === 401) {
+            // 如果刷新令牌也失败，直接重定向到登录页
+            Router.push('/login');
         }
         return Promise.reject(error);
     }

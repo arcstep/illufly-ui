@@ -38,7 +38,7 @@ export const fetchUser = async () => {
         console.log("fetchUser", response.data);
         return response.data;
     } catch (error) {
-        // console.error('获取用户信息失败:', error);
+        console.log('获取用户信息失败');
         // throw new Error('获取用户信息失败');
     }
 };

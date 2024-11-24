@@ -24,9 +24,14 @@ export const AuthProvider = ({ children }) => {
 
             try {
                 const userData = await fetchUser();
-                setUser(userData);
+                if (userData.username) {
+                    setUser(userData);
+                } else {
+                    router.push('/login');
+                }
             } catch (error) {
                 setUser(null);
+                router.push('/login');
             } finally {
                 setLoading(false);
             }

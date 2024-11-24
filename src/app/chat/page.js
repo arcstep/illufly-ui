@@ -41,6 +41,8 @@ export default function Chat() {
                 setIsFirstColumnVisible={setIsFirstColumnVisible}
                 isSecondColumnVisible={isSecondColumnVisible}
                 setIsSecondColumnVisible={setIsSecondColumnVisible}
+                username={user.username}
+                onLogout={logout}
             />
             <div className="flex flex-1 flex-col md:flex-row">
                 {isFirstColumnVisible && <AgentList />}

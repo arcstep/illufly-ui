@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { dashboardData } from '../../utils/dashboard';
+import { ask_agent } from '../../utils/chat';
 import { useAuth } from '../../context/AuthContext';
 import Header from '../../components/Chat/Header';
 import AgentList from '../../components/Chat/AgentList';
@@ -15,20 +15,30 @@ export default function Chat() {
     const [isLoading, setIsLoading] = useState(true);
     const [isFirstColumnVisible, setIsFirstColumnVisible] = useState(false);
     const [isSecondColumnVisible, setIsSecondColumnVisible] = useState(false);
+    const [messages, setMessages] = useState([]);
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const data = await dashboardData();
-                setData(data);
-            } catch (error) {
-                console.error('数据加载失败:', error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchData();
+        setIsLoading(false);
     }, []);
+
+    const handleSendMessage = async (text) => {
+        try {
+            const response = await ask_agent(text, (result) => {
+                console.log("result", result);
+                setMessages((prevMessages) => [...prevMessages, result]);
+            }, (error) => {
+                console.error('SSE 错误:', error);
+            });
+
+            if (response && response.json) {
+                const result = await response.json();
+                console.log("result", result);
+                setMessages((prevMessages) => [...prevMessages, result]);
+            }
+        } catch (error) {
+            console.error('发送消息失败:', error);
+        }
+    };
 
     if (isLoading) return <p>加载中...</p>;
     console.log("user", user);
@@ -48,8 +58,8 @@ export default function Chat() {
                 {isFirstColumnVisible && <AgentList />}
                 {isSecondColumnVisible && <HistoryList />}
                 <div className="flex-1 p-4 flex flex-col">
-                    <MessageHistory />
-                    <MessageInput />
+                    <MessageHistory messages={messages} />
+                    <MessageInput onSendMessage={handleSendMessage} />
                 </div>
             </div>
         </div>

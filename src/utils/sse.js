@@ -23,12 +23,13 @@ export const startSSE = (endpoint, onMessage, onError, options = {}) => {
                     if (eventStr.trim()) {
                         const event = parseEvent(eventStr);
                         if (event && event.data) {
-                            console.log('接收到的原始数据:', event.data);
+                            // console.log('接收到的原始数据:', event);
                             try {
                                 const jsonObjects = event.data.split('\n').filter(line => line.trim());
                                 jsonObjects.forEach(jsonStr => {
                                     const parsedData = JSON.parse(jsonStr);
-                                    onMessage(parsedData);
+                                    // console.log("parsedData >>>>>>>>>>>>", parsedData);
+                                    onMessage(parsedData.calling_id, parsedData.content_id, parsedData);
                                 });
                             } catch (error) {
                                 console.error('JSON 解析错误:', error);

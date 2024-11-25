@@ -22,7 +22,6 @@ api.interceptors.response.use(
                 // 重新发送原始请求
                 return api(originalRequest);
             } catch (err) {
-                console.error('刷新令牌失败:', err);
                 handleAuthError(err);
                 return Promise.reject(err);
             }

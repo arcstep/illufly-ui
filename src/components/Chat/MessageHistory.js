@@ -10,7 +10,7 @@ export default function MessageHistory({ messages }) {
                             <div className="font-semibold">{message.name}</div>
                             {message.segments.map((segment, index) => {
                                 const content = segment.content;
-                                const displayContent = typeof content === 'string' ? content.toUpperCase() : '';
+                                const displayContent = typeof content === 'string' ? content : '';
                                 return (
                                     <div key={index} className="bg-white shadow-md p-2 mb-2 rounded">
                                         <div className="text-xs text-gray-500">[{segment.type.toUpperCase()}]</div>

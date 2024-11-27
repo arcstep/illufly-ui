@@ -26,7 +26,7 @@ export default function MessageInput({ onSendMessage }) {
             />
             <div className="flex items-center">
                 <textarea
-                    className="flex-1 p-2 border rounded"
+                    className="flex-1 p-2 m-2 border rounded"
                     rows="1"
                     style={{ maxHeight: '10em', resize: 'none', overflowY: 'auto' }}
                     placeholder="输入你的消息..."

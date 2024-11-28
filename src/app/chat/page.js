@@ -18,8 +18,9 @@ export default function Chat() {
     const { user, loading, logout } = useAuth();
     const [data, setData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [isFirstColumnVisible, setIsFirstColumnVisible] = useState(false);
-    const [isSecondColumnVisible, setIsSecondColumnVisible] = useState(false);
+    const [isAgentListVisible, setIsAgentListVisible] = useState(false);
+    const [isHistoryListVisible, setIsHistoryListVisible] = useState(false);
+    const [agent, setAgent] = useState('fake_llm');
     const [messages, setMessages] = useState([]);
     const messagesRef = useRef(messages); // 用于存储当前的 messages 状态
     const pendingUpdates = useRef([]); // 用于存储待处理的消息更新
@@ -50,7 +51,7 @@ export default function Chat() {
 
             let tempChunkContent = '';
 
-            await ask_agent(prompt, (calling_id, data) => {
+            await ask_agent(agent, prompt, (calling_id, data) => {
                 const { block_type, content_id, content } = data;
                 if (IGNORE_BLOCK_TYPES.includes(block_type)) {
                     return;
@@ -152,16 +153,16 @@ export default function Chat() {
     return (
         <div className="p-4 md:p-8 h-screen flex flex-col">
             <Header
-                isFirstColumnVisible={isFirstColumnVisible}
-                setIsFirstColumnVisible={setIsFirstColumnVisible}
-                isSecondColumnVisible={setIsSecondColumnVisible}
-                setIsSecondColumnVisible={setIsSecondColumnVisible}
+                isAgentListVisible={isAgentListVisible}
+                setIsAgentListVisible={setIsAgentListVisible}
+                isHistoryListVisible={isHistoryListVisible}
+                setIsHistoryListVisible={setIsHistoryListVisible}
                 username={user.username}
                 onLogout={logout}
             />
             <div className="flex flex-1 flex-col md:flex-row">
-                {isFirstColumnVisible && <AgentList />}
-                {isSecondColumnVisible && <HistoryList />}
+                {isAgentListVisible && <AgentList setAgent={setAgent} selected_agent={agent} />}
+                {isHistoryListVisible && <HistoryList />}
                 <div className="flex-1 p-4 flex flex-col">
                     <MessageHistory messages={messages} />
                     <MessageInput onSendMessage={handleSendMessage} />

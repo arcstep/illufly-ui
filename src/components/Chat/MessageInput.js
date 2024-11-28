@@ -15,7 +15,7 @@ export default function MessageInput({ onSendMessage }) {
 
     return (
         <div className="sticky bottom-0 bg-white">
-            <input
+            {/* <input
                 type="file"
                 className="mb-2"
                 onChange={(e) => {
@@ -23,7 +23,7 @@ export default function MessageInput({ onSendMessage }) {
                     // 在这里处理文件上传逻辑
                     console.log('上传的文件:', files);
                 }}
-            />
+            /> */}
             <div className="flex items-center">
                 <textarea
                     className="flex-1 p-2 m-2 border rounded"

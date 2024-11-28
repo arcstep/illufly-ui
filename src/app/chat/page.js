@@ -160,11 +160,13 @@ export default function Chat() {
                 username={user.username}
                 onLogout={logout}
             />
-            <div className="flex flex-1 flex-col md:flex-row">
+            <div className="flex flex-1 flex-col md:flex-row overflow-hidden">
                 {isAgentListVisible && <AgentList setAgent={setAgent} selected_agent={agent} />}
                 {isHistoryListVisible && <HistoryList />}
                 <div className="flex-1 p-4 flex flex-col">
-                    <MessageHistory messages={messages} />
+                    <div className="flex-1 overflow-y-auto">
+                        <MessageHistory messages={messages} />
+                    </div>
                     <MessageInput onSendMessage={handleSendMessage} />
                 </div>
             </div>

@@ -1,8 +1,14 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect } from 'react';
-import { fetchUser, login as authLogin, logout as authLogout } from '../utils/auth';
 import { useRouter, usePathname } from 'next/navigation';
+import { createContext, useContext, useState, useEffect } from 'react';
+
+import {
+    fetchUser as authFetchUser,
+    login as authLogin,
+    logout as authLogout,
+    refreshToken as authRefreshToken
+} from '../utils/auth';
 
 // 创建 AuthContext
 const AuthContext = createContext();
@@ -23,7 +29,7 @@ export const AuthProvider = ({ children }) => {
             }
 
             try {
-                const userData = await fetchUser();
+                const userData = await authFetchUser();
                 if (userData.username) {
                     setUser(userData);
                 } else {
@@ -51,16 +57,33 @@ export const AuthProvider = ({ children }) => {
 
     const logout = async () => {
         try {
-            await authLogout();
             setUser(null);
-            router.push('/login');
+            await authLogout();
         } catch (error) {
             console.error('登出错误:', error);
+        }
+        router.push('/login');
+    };
+
+    const refreshToken = async () => {
+        try {
+            await authRefreshToken();
+        } catch (error) {
+            console.error('刷新令牌错误:', error);
+        }
+    };
+
+    const fetchUser = async () => {
+        try {
+            const userData = await authFetchUser();
+            setUser(userData);
+        } catch (error) {
+            console.error('获取用户信息错误:', error);
         }
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, logout }}>
+        <AuthContext.Provider value={{ user, loading, login, logout, refreshToken, fetchUser }}>
             {children}
         </AuthContext.Provider>
     );

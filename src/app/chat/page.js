@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { ask_agent } from '../../utils/chat';
+import { chat_with_agent, get_agent_history, get_agent_history_list } from '../../utils/chat';
 import { useAuth } from '../../context/AuthContext';
 import Header from '../../components/Chat/Header';
 import AgentList from '../../components/Chat/AgentList';
@@ -12,15 +12,17 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faRobot } from '@fortawesome/free-solid-svg-icons';
 
 const CHUNK_BLOCK_TYPES = ["text", "chunk", "tool_resp_text", "tool_resp_chunk"];
-const IGNORE_BLOCK_TYPES = ["final_text", "response", "user", "new_line", "runnable", "info"];
+const IGNORE_BLOCK_TYPES = [];
 
 export default function Chat() {
-    const { user, loading, logout } = useAuth();
+    const { user, loading, logout, fetchUser, refreshToken } = useAuth();
     const [data, setData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isAgentListVisible, setIsAgentListVisible] = useState(false);
     const [isHistoryListVisible, setIsHistoryListVisible] = useState(false);
     const [agent, setAgent] = useState('fake_llm');
+    const [history, setHistory] = useState(null);
+    const [historyList, setHistoryList] = useState([]);
     const [messages, setMessages] = useState([]);
     const messagesRef = useRef(messages); // 用于存储当前的 messages 状态
     const pendingUpdates = useRef([]); // 用于存储待处理的消息更新
@@ -34,6 +36,32 @@ export default function Chat() {
     useEffect(() => {
         messagesRef.current = messages;
     }, [messages]);
+
+    const handleSelectAgent = (agent) => {
+        setAgent(agent);
+        get_agent_history_list(agent, (historyList) => {
+            if (Array.isArray(historyList.data)) {
+                setHistoryList(historyList.data);
+            } else {
+                console.error("获取的历史记录列表不是数组:", historyList.data);
+                setHistoryList([]); // 设置为空数组以避免错误
+            }
+        }, (error) => {
+            console.error('获取历史记录列表失败:', error);
+        });
+    };
+
+    const handleGetHistory = async () => {
+        get_agent_history(agent, (history) => {
+            setHistory(history);
+        }, (error) => {
+            console.error('获取历史记录失败:', error);
+        });
+    };
+
+    const handleSelectHistory = (history) => {
+        setHistory(history);
+    };
 
     const handleSendMessage = async (prompt) => {
         console.log("prompt >>> ", prompt);
@@ -51,7 +79,7 @@ export default function Chat() {
 
             let tempChunkContent = '';
 
-            await ask_agent(agent, prompt, (calling_id, data) => {
+            await chat_with_agent(agent, prompt, (calling_id, data) => {
                 const { block_type, content_id, content } = data;
                 if (IGNORE_BLOCK_TYPES.includes(block_type)) {
                     return;
@@ -159,10 +187,12 @@ export default function Chat() {
                 setIsHistoryListVisible={setIsHistoryListVisible}
                 username={user.username}
                 onLogout={logout}
+                onFetchUser={fetchUser}
+                onRefreshToken={refreshToken}
             />
             <div className="flex flex-1 flex-col md:flex-row overflow-hidden">
-                {isAgentListVisible && <AgentList setAgent={setAgent} selected_agent={agent} />}
-                {isHistoryListVisible && <HistoryList />}
+                {isAgentListVisible && <AgentList onChangeAgent={handleSelectAgent} selected_agent={agent} />}
+                {isHistoryListVisible && <HistoryList historyList={historyList} onSelectHistory={handleSelectHistory} />}
                 <div className="flex-1 p-4 flex flex-col">
                     <div className="flex-1 overflow-y-auto">
                         <MessageHistory messages={messages} />

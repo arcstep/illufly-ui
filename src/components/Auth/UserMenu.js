@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 
-export default function UserMenu({ username, onLogout }) {
+export default function UserMenu({ username, onLogout, onFetchUser, onRefreshToken }) {
     const [isUserMenuVisible, setIsUserMenuVisible] = useState(false);
     const menuRef = useRef(null);
 
@@ -31,6 +31,19 @@ export default function UserMenu({ username, onLogout }) {
             </button>
             {isUserMenuVisible && (
                 <div className="absolute right-0 mt-2 w-48 bg-white border rounded shadow-lg">
+                    <button
+                        onClick={onFetchUser}
+                        className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                    >
+                        账户信息
+                    </button>
+                    <button
+                        onClick={onRefreshToken}
+                        className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                    >
+                        刷新令牌
+                    </button>
+                    <hr />
                     <button
                         onClick={onLogout}
                         className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100"

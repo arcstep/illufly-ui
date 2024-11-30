@@ -18,7 +18,7 @@ api.interceptors.response.use(
             originalRequest._retry = true;
             try {
                 // 尝试刷新令牌
-                await api.post('/api/token/refresh', {}, { withCredentials: true });
+                await api.post('/api/refresh-token', {}, { withCredentials: true });
                 // 重新发送原始请求
                 return api(originalRequest);
             } catch (err) {

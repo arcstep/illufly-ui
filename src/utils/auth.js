@@ -46,3 +46,13 @@ export const fetchUser = async () => {
         // throw new Error('获取用户信息失败');
     }
 };
+
+// 刷新令牌
+export const refreshToken = async () => {
+    try {
+        await api.post('/api/refresh-token', {}, { withCredentials: true });
+    } catch (error) {
+        console.log('刷新令牌失败');
+        // throw new Error('刷新令牌失败');
+    }
+};

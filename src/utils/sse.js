@@ -1,4 +1,4 @@
-import api from './api'; // 使用 axios 实例
+// import api from './api'; // 使用 axios 实例
 import { API_BASE_URL } from './config';
 
 export const startSSE = (endpoint, onMessage, onError, options = {}) => {

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export default function AgentList({ setAgent, selected_agent }) {
+export default function AgentList({ onChangeAgent, selected_agent }) {
     const agents = [
         { id: 'fake_llm', name: '模拟', icon: '🤖' },
         { id: 'chat', name: '通义千问', icon: '💬' },
@@ -17,7 +17,7 @@ export default function AgentList({ setAgent, selected_agent }) {
                         key={agent.id}
                         className={`cursor-pointer p-2 border mb-2 flex items-center ${selected_agent === agent.id ? 'bg-blue-500 text-white' : 'bg-gray-100'
                             }`}
-                        onClick={() => setAgent(agent.id)}
+                        onClick={() => onChangeAgent(agent.id)}
                     >
                         <span className="mr-2">{agent.icon}</span>
                         <span>{agent.name}</span>

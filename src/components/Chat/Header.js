@@ -8,7 +8,9 @@ export default function Header({
     isHistoryListVisible,
     setIsHistoryListVisible,
     username,
-    onLogout
+    onLogout,
+    onFetchUser,
+    onRefreshToken
 }) {
     return (
         <header className="flex justify-between items-center mb-4">
@@ -32,7 +34,12 @@ export default function Header({
                         style={{ color: isHistoryListVisible ? 'darkblue' : 'gray' }}
                     />
                 </button>
-                <UserMenu username={username} onLogout={onLogout} />
+                <UserMenu
+                    username={username}
+                    onLogout={onLogout}
+                    onFetchUser={onFetchUser}
+                    onRefreshToken={onRefreshToken}
+                />
             </div>
         </header>
     );

@@ -1,11 +1,9 @@
 // import api from './api'; // 使用 axios 实例
 import { API_BASE_URL } from './config';
+import { refreshToken } from './auth';
 
-export const startSSE = (endpoint, onMessage, onError, options = {}) => {
+export const startSSE = async (endpoint, onMessage, onError, options = {}) => {
     let eventSource = null;
-    let retryCount = 0;
-    let lastEventId = null;
-    const maxRetries = 1;
 
     const start = () => {
         // 如果请求成功，使用 EventSource 处理流式数据
@@ -32,7 +30,8 @@ export const startSSE = (endpoint, onMessage, onError, options = {}) => {
         };
     };
 
-    // 开始连接
+    // 在开始连接之前刷新 token
+    await refreshToken();
     start();
 
     // 提供一个方法来停止连接

@@ -4,8 +4,8 @@ export default function AgentList({ onChangeAgent, selected_agent }) {
     const agents = [
         { id: 'fake_llm', name: '模拟', icon: '🤖' },
         { id: 'chat', name: '通义千问', icon: '💬' },
-        { id: 'team', name: '智能体团队', icon: '👥' },
-        { id: 'react', name: 'ReAct长推理', icon: '🔍' },
+        // { id: 'team', name: '智能体团队', icon: '👥' },
+        // { id: 'react', name: 'ReAct长推理', icon: '🔍' },
     ];
 
     return (

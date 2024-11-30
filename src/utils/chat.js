@@ -7,13 +7,13 @@ export const chat_with_agent = async (agent, prompt, onMessage, onError) => {
     const params = { prompt };
 
     // 使用 startSSE 处理 SSE 消息
-    startSSE(`/api/${agent || 'fake_llm'}`, onMessage, onError, {
+    await startSSE(`/api/${agent || 'fake_llm'}`, onMessage, onError, {
         params, // 传递查询参数
     });
 };
 
-export const get_agent_history = async (agent, onLoaded, onError) => {
-    api.get(`/api/${agent || 'fake_llm'}/history`).then(onLoaded).catch(onError);
+export const get_agent_history = async (agent, onLoadMessages, onError) => {
+    api.get(`/api/${agent || 'fake_llm'}/history`).then(onLoadMessages).catch(onError);
 };
 
 export const get_agent_history_list = async (agent, onLoaded, onError) => {

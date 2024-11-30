@@ -8,7 +8,7 @@ export const login = async (username, password) => {
         formData.append('username', username);
         formData.append('password', password);
 
-        const response = await api.post('/api/login', formData, {
+        const response = await api.post('/api/auth/login', formData, {
             withCredentials: true,
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -31,7 +31,7 @@ export const login = async (username, password) => {
 // 登出函数
 export const logout = async () => {
     try {
-        await api.post('/api/logout', {}, { withCredentials: true });
+        await api.post('/api/auth/logout', {}, { withCredentials: true });
     } catch (error) {
         if (error.response && error.response.status === 401) {
             // 如果返回401，认为是正常退出
@@ -44,7 +44,7 @@ export const logout = async () => {
 // 获取当前用户信息
 export const fetchUser = async () => {
     try {
-        const response = await api.get('/api/profile');
+        const response = await api.get('/api/auth/profile');
         console.log("fetchUser", response.data);
         return response.data;
     } catch (error) {
@@ -56,7 +56,7 @@ export const fetchUser = async () => {
 // 刷新令牌
 export const refreshToken = async () => {
     try {
-        await api.post('/api/refresh-token', {}, { withCredentials: true });
+        await api.post('/api/auth/refresh-token', {}, { withCredentials: true });
     } catch (error) {
         console.log('刷新令牌失败');
         // throw new Error('刷新令牌失败');

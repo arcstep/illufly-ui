@@ -1,6 +1,9 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faUser, faRobot } from '@fortawesome/free-solid-svg-icons';
+
 import { chat_with_agent, get_agent_history, get_agent_history_list } from '../../utils/chat';
 import { useAuth } from '../../context/AuthContext';
 import Header from '../../components/Chat/Header';
@@ -8,20 +11,16 @@ import AgentList from '../../components/Chat/AgentList';
 import HistoryList from '../../components/Chat/HistoryList';
 import MessageHistory from '../../components/Chat/MessageHistory';
 import MessageInput from '../../components/Chat/MessageInput';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUser, faRobot } from '@fortawesome/free-solid-svg-icons';
 
 const CHUNK_BLOCK_TYPES = ["text", "chunk", "tool_resp_text", "tool_resp_chunk"];
 const IGNORE_BLOCK_TYPES = [];
 
 export default function Chat() {
-    const { user, loading, logout, fetchUser, refreshToken } = useAuth();
-    const [data, setData] = useState(null);
+    const { user, logout, fetchUser, refreshToken } = useAuth();
     const [isLoading, setIsLoading] = useState(true);
     const [isAgentListVisible, setIsAgentListVisible] = useState(false);
     const [isHistoryListVisible, setIsHistoryListVisible] = useState(false);
     const [agent, setAgent] = useState('fake_llm');
-    const [history, setHistory] = useState(null);
     const [historyList, setHistoryList] = useState([]);
     const [messages, setMessages] = useState([]);
     const messagesRef = useRef(messages); // 用于存储当前的 messages 状态
@@ -52,15 +51,85 @@ export default function Chat() {
     };
 
     const handleGetHistory = async () => {
-        get_agent_history(agent, (history) => {
-            setHistory(history);
-        }, (error) => {
-            console.error('获取历史记录失败:', error);
-        });
-    };
+        try {
+            get_agent_history(agent, (historyData) => {
+                const parsedMessages = [];
+                console.log("historyData >>> ", historyData);
 
-    const handleSelectHistory = (history) => {
-        setHistory(history);
+                for (const callingId in historyData.data.history) {
+                    const events = historyData.data.history[callingId];
+                    let humanMessage = null;
+                    let aiMessage = null;
+
+                    events.forEach((entry) => {
+                        const { id, event, data } = entry;
+                        const parsedData = JSON.parse(data);
+                        const { block_type, content, content_id, created_at } = parsedData;
+
+                        if (block_type === 'human') {
+                            // 人类消息
+                            if (!humanMessage) {
+                                humanMessage = {
+                                    id: `${callingId}-human`,
+                                    sender: 'user',
+                                    logo: <FontAwesomeIcon icon={faUser} />,
+                                    name: user.username,
+                                    segments: [{ type: block_type, content }],
+                                    timestamp: new Date(created_at).toLocaleString(),
+                                };
+                            }
+                        } else {
+                            // AI消息
+                            if (!aiMessage) {
+                                aiMessage = {
+                                    id: `${callingId}-ai`,
+                                    sender: 'ai',
+                                    logo: <FontAwesomeIcon icon={faRobot} />,
+                                    name: 'AI',
+                                    segments: [],
+                                    timestamp: new Date(created_at).toLocaleString(),
+                                };
+                            }
+
+                            if (CHUNK_BLOCK_TYPES.includes(block_type)) {
+                                // 处理chunk类型
+                                const existingSegment = aiMessage.segments.find(segment => segment.id === content_id);
+                                if (existingSegment) {
+                                    existingSegment.content += content;
+                                } else {
+                                    aiMessage.segments.push({
+                                        type: block_type,
+                                        id: content_id,
+                                        content,
+                                    });
+                                }
+                            } else {
+                                // 处理其他AI消息
+                                aiMessage.segments.push({
+                                    type: block_type,
+                                    id: content_id,
+                                    content,
+                                });
+                            }
+                        }
+                    });
+
+                    // 确保human消息在ai消息之前
+                    if (humanMessage) {
+                        parsedMessages.push(humanMessage);
+                    }
+                    if (aiMessage) {
+                        parsedMessages.push(aiMessage);
+                    }
+                }
+
+                setMessages(parsedMessages);
+            }, (error) => {
+                console.error('获取历史记录失败:', error);
+            });
+        } catch (error) {
+            console.error('处理历史记录失败:', error);
+        }
     };
 
     const handleSendMessage = async (prompt) => {
@@ -192,7 +261,7 @@ export default function Chat() {
             />
             <div className="flex flex-1 flex-col md:flex-row overflow-hidden">
                 {isAgentListVisible && <AgentList onChangeAgent={handleSelectAgent} selected_agent={agent} />}
-                {isHistoryListVisible && <HistoryList historyList={historyList} onSelectHistory={handleSelectHistory} />}
+                {isHistoryListVisible && <HistoryList historyList={historyList} onSelectHistory={handleGetHistory} />}
                 <div className="flex-1 p-4 flex flex-col">
                     <div className="flex-1 overflow-y-auto">
                         <MessageHistory messages={messages} />

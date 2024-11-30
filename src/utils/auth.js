@@ -15,7 +15,13 @@ export const login = async (username, password) => {
             },
         });
 
-        return { ...response.data, username };
+        if (!response.withCredentials) {
+            alert('请检查浏览器隐私设置：客户端无法保存 Cookie 导致登录失败！');
+            return null;
+        } else {
+            return { ...response.data, username };
+        }
+
     } catch (error) {
         console.error('登录失败:', error.response ? error.response.data : error.message);
         throw new Error('登录失败，请检查您的凭据并重试。');

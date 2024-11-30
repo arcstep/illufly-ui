@@ -48,7 +48,9 @@ export const AuthProvider = ({ children }) => {
     const login = async (username, password) => {
         try {
             const userData = await authLogin(username, password);
-            setUser(userData);
+            if (userData) {
+                setUser(userData);
+            }
         } catch (error) {
             console.error('登录失败:', error);
             throw error;

@@ -15,11 +15,13 @@ export const login = async (username, password) => {
             },
         });
 
-        if (!response.withCredentials) {
+        // console.log("login >>> ", response);
+
+        if (!response.request.withCredentials) {
             alert('请检查浏览器隐私设置：客户端无法保存 Cookie 导致登录失败！');
             return null;
         } else {
-            return { ...response.data, username };
+            return response.data;
         }
 
     } catch (error) {
@@ -45,7 +47,7 @@ export const logout = async () => {
 export const fetchUser = async () => {
     try {
         const response = await api.get('/api/auth/profile');
-        console.log("fetchUser", response.data);
+        // console.log("fetchUser", response.data);
         return response.data;
     } catch (error) {
         console.log('获取用户信息失败');

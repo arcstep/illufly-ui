@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }) => {
     const pathname = usePathname();
 
     useEffect(() => {
-        console.log("Current pathname:", pathname);
+        // console.log("Current pathname:", pathname);
         const initializeUser = async () => {
             if (pathname === '/login') {
                 setLoading(false);
@@ -48,9 +48,11 @@ export const AuthProvider = ({ children }) => {
     const login = async (username, password) => {
         try {
             const userData = await authLogin(username, password);
+            // console.log("userData >>> ", userData);
             if (userData) {
                 setUser(userData);
             }
+            return userData;
         } catch (error) {
             console.error('登录失败:', error);
             throw error;

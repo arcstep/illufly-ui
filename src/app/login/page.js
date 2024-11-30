@@ -8,7 +8,7 @@ export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const { user, login } = useAuth();
+    const { login } = useAuth();
     const router = useRouter();
     const [loading, setLoading] = useState(false);
 
@@ -18,8 +18,9 @@ export default function LoginPage() {
         setLoading(true);
 
         try {
-            await login(email, password);
-            if (user) {
+            const userData = await login(email, password);
+            // console.log("user >>> ", userData);
+            if (userData) {
                 router.push('/chat');
             }
         } catch (err) {

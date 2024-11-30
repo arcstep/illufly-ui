@@ -54,7 +54,7 @@ export default function Chat() {
         try {
             get_agent_history(agent, (historyData) => {
                 const parsedMessages = [];
-                console.log("historyData >>> ", historyData);
+                // console.log("historyData >>> ", historyData);
 
                 for (const callingId in historyData.data.history) {
                     const events = historyData.data.history[callingId];
@@ -133,7 +133,7 @@ export default function Chat() {
     };
 
     const handleSendMessage = async (prompt) => {
-        console.log("prompt >>> ", prompt);
+        // console.log("prompt >>> ", prompt);
         try {
             // Add the user's message to the messages list
             const newMessage = {

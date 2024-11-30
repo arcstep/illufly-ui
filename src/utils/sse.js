@@ -12,7 +12,7 @@ export const startSSE = async (endpoint, onMessage, onError, options = {}) => {
             Object.keys(options.params).forEach(key => url.searchParams.append(key, options.params[key]));
         }
         eventSource = new EventSource(url, { withCredentials: true });
-        console.log("eventSource.withCredentials", eventSource.withCredentials);
+        // console.log("eventSource.withCredentials", eventSource.withCredentials);
 
         eventSource.onmessage = (event) => {
             // console.log("event >>> ", event);

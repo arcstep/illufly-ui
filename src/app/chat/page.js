@@ -279,14 +279,28 @@ export default function Chat() {
                 onFetchUser={fetchUser}
                 onRefreshToken={refreshToken}
             />
-            <div className="flex flex-1 flex-col md:flex-row overflow-hidden">
-                {isAgentListVisible && <AgentList onChangeAgent={handleSelectAgent} selected_agent={agent} />}
-                {isHistoryListVisible && <HistoryList historyId={historyId} historyList={historyList} onSelectHistory={handleSelectHistory} onNewHistory={handleNewHistory} />}
-                <div className="flex-1 p-4 flex flex-col">
-                    <div className="flex-1 overflow-y-auto">
+            <div className="flex flex-1 flex-col md:flex-row h-full overflow-hidden">
+                {isAgentListVisible && (
+                    <AgentList
+                        onChangeAgent={handleSelectAgent}
+                        selected_agent={agent}
+                        className="min-h-[100px] flex-shrink-0"
+                    />
+                )}
+                {isHistoryListVisible && (
+                    <HistoryList
+                        historyId={historyId}
+                        historyList={historyList}
+                        onSelectHistory={handleSelectHistory}
+                        onNewHistory={handleNewHistory}
+                    // isFullHeight={true}
+                    />
+                )}
+                <div className="flex-1 p-4 flex flex-col min-h-[200px]">
+                    <div className="flex-1 overflow-y-auto min-h-[150px]">
                         <MessageHistory messages={messages} />
                     </div>
-                    <MessageInput onSendMessage={handleSendMessage} />
+                    <MessageInput onSendMessage={handleSendMessage} className="min-h-[50px]" />
                 </div>
             </div>
         </div>

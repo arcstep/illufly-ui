@@ -7,7 +7,7 @@ import rehypeHighlight from 'rehype-highlight';
 import remarkBreaks from 'remark-breaks';
 import remarkEmoji from 'remark-emoji';
 
-export default function MessageHistory({ messages }) {
+export default function MessageList({ messages }) {
     const messagesEndRef = useRef(null);
 
     useEffect(() => {

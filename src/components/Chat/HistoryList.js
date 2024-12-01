@@ -5,7 +5,7 @@ export default function HistoryList({ historyId, historyList, onSelectHistory, o
     }
 
     return (
-        <div className="w-full md:w-1/6 p-4 border-b md:border-b-0 md:border-r flex flex-col h-full">
+        <div className="w-full max-w-xs p-4 border-b md:border-b-0 md:border-r flex flex-col h-full">
             <div className="flex justify-center mb-4">
                 <button onClick={onNewHistory} className="w-full p-2 bg-gray-300 text-black rounded">
                     + 新建对话

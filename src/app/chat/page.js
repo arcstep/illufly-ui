@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faRobot } from '@fortawesome/free-solid-svg-icons';
 
-import { chat_with_agent, get_agent_history, get_agent_history_list } from '../../utils/chat';
+import { chat_with_agent, get_agent_history_list, change_agent_history, create_new_agent_history } from '../../utils/chat';
 import { useAuth } from '../../context/AuthContext';
 import Header from '../../components/Chat/Header';
 import AgentList from '../../components/Chat/AgentList';
@@ -18,10 +18,11 @@ const IGNORE_BLOCK_TYPES = [];
 export default function Chat() {
     const { user, logout, fetchUser, refreshToken } = useAuth();
     const [isLoading, setIsLoading] = useState(true);
-    const [isAgentListVisible, setIsAgentListVisible] = useState(false);
-    const [isHistoryListVisible, setIsHistoryListVisible] = useState(false);
+    const [isAgentListVisible, setIsAgentListVisible] = useState(true);
+    const [isHistoryListVisible, setIsHistoryListVisible] = useState(true);
     const [agent, setAgent] = useState('fake_llm');
     const [historyList, setHistoryList] = useState([]);
+    const [historyId, setHistoryId] = useState('');
     const [messages, setMessages] = useState([]);
     const messagesRef = useRef(messages); // 用于存储当前的 messages 状态
     const pendingUpdates = useRef([]); // 用于存储待处理的消息更新
@@ -39,8 +40,11 @@ export default function Chat() {
     const handleSelectAgent = (agent) => {
         setAgent(agent);
         get_agent_history_list(agent, (historyList) => {
-            if (Array.isArray(historyList.data)) {
-                setHistoryList(historyList.data);
+            console.log("historyList >>> ", historyList);
+            change_history(agent, historyList.data.history_id)
+
+            if (Array.isArray(historyList.data.history_list)) {
+                setHistoryList(historyList.data.history_list);
             } else {
                 console.error("获取的历史记录列表不是数组:", historyList.data);
                 setHistoryList([]); // 设置为空数组以避免错误
@@ -50,9 +54,25 @@ export default function Chat() {
         });
     };
 
-    const handleGetHistory = async () => {
+    const handleNewHistory = async () => {
+        await create_new_agent_history(agent, (newHistoryId) => {
+            console.log("newHistoryId >>> ", newHistoryId);
+            setHistoryList(function (lastHistoryList) {
+                return [newHistoryId.data, ...lastHistoryList];
+            });
+            setHistoryId(newHistoryId.data)
+            setMessages([])
+        });
+    };
+
+    const handleSelectHistory = async (selectedHistoryId) => {
+        change_history(agent, selectedHistoryId);
+    };
+
+    const change_history = async (selectedAgent, selectedHistoryId) => {
+        setHistoryId(selectedHistoryId);
         try {
-            get_agent_history(agent, (historyData) => {
+            await change_agent_history(selectedAgent, selectedHistoryId, (historyData) => {
                 const parsedMessages = [];
                 // console.log("historyData >>> ", historyData);
 
@@ -261,7 +281,7 @@ export default function Chat() {
             />
             <div className="flex flex-1 flex-col md:flex-row overflow-hidden">
                 {isAgentListVisible && <AgentList onChangeAgent={handleSelectAgent} selected_agent={agent} />}
-                {isHistoryListVisible && <HistoryList historyList={historyList} onSelectHistory={handleGetHistory} />}
+                {isHistoryListVisible && <HistoryList historyId={historyId} historyList={historyList} onSelectHistory={handleSelectHistory} onNewHistory={handleNewHistory} />}
                 <div className="flex-1 p-4 flex flex-col">
                     <div className="flex-1 overflow-y-auto">
                         <MessageHistory messages={messages} />

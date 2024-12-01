@@ -16,6 +16,19 @@ export const get_agent_history = async (agent, onLoadMessages, onError) => {
     api.get(`/api/${agent || 'fake_llm'}/history`).then(onLoadMessages).catch(onError);
 };
 
-export const get_agent_history_list = async (agent, onLoaded, onError) => {
-    api.get(`/api/${agent || 'fake_llm'}/history/list`).then(onLoaded).catch(onError);
+export const get_agent_history_list = async (agent, onLoadHistoryList, onError) => {
+    api.get(`/api/${agent || 'fake_llm'}/history/list`).then(onLoadHistoryList).catch(onError);
+};
+
+export const change_agent_history = async (agent, historyId, onLoadMessages, onError) => {
+    const formData = new FormData();
+    formData.append('history_id', historyId);
+
+    api.post(`/api/${agent || 'fake_llm'}/history/change`, formData)
+        .then(onLoadMessages)
+        .catch(onError);
+};
+
+export const create_new_agent_history = async (agent, onNewHistoryId, onError) => {
+    api.post(`/api/${agent || 'fake_llm'}/history/new`).then(onNewHistoryId).catch(onError);
 };

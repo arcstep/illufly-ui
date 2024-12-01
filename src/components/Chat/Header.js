@@ -13,7 +13,7 @@ export default function Header({
     onRefreshToken
 }) {
     return (
-        <header className="flex justify-between items-center mb-4">
+        <header className="flex justify-between items-center mb-4 fixed top-0 left-0 right-0 z-10 bg-white">
             <h1 className="text-xl md:text-2xl font-bold">✨🦋 与智能体对话</h1>
             <div className="flex items-center">
                 <button

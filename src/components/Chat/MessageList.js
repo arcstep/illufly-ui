@@ -15,8 +15,7 @@ export default function MessageList({ messages }) {
     }, [messages]);
 
     return (
-        <div className="flex-1 overflow-y-auto mb-4">
-            <h3 className="text-md md:text-lg font-bold">消息</h3>
+        <div className="h-full overflow-y-auto mb-4">
             <ul>
                 {messages.map((message) => (
                     <li key={message.id} className="flex items-start mb-4">

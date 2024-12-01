@@ -7,12 +7,16 @@ import AgentList from '../../components/Chat/AgentList';
 import Tabs from '../../components/Chat/Tabs';
 import TabChat from '../../components/Chat/TabChat';
 import TabSettings from '../../components/Chat/TabSettings';
+import TabLearn from '../../components/Chat/TabLearn';
+import TabKnowledge from '../../components/Chat/TabKnowledge';
+import TabData from '../../components/Chat/TabData';
 
 export default function Chat() {
     const { user, logout, fetchUser, refreshToken } = useAuth();
     const [isAgentListVisible, setIsAgentListVisible] = useState(true);
     const [isHistoryListVisible, setIsHistoryListVisible] = useState(true);
     const [agent, setAgent] = useState('fake_llm');
+    const [selectedTab, setSelectedTab] = useState('chat');
 
     if (!user) return null;
 
@@ -28,7 +32,7 @@ export default function Chat() {
                 onFetchUser={fetchUser}
                 onRefreshToken={refreshToken}
             />
-            <div className="flex flex-1 flex-col md:flex-row h-full">
+            <div className="flex flex-1 flex-row h-full">
                 {isAgentListVisible && (
                     <AgentList
                         onChangeAgent={setAgent}
@@ -36,7 +40,7 @@ export default function Chat() {
                         className="min-h-[100px] flex-shrink-0 overflow-y-auto max-h-full"
                     />
                 )}
-                <div className="flex-1 flex flex-col min-h-[200px]">
+                <div className="flex-1 flex flex-col overflow-y-auto">
                     <Tabs
                         tabs={[
                             {
@@ -57,8 +61,36 @@ export default function Chat() {
                                     </div>
                                 ),
                             },
+                            {
+                                key: 'learn',
+                                label: '训练',
+                                content: (
+                                    <div className="flex-1 overflow-y-auto h-full">
+                                        <TabLearn agent={agent} setAgent={setAgent} />
+                                    </div>
+                                ),
+                            },
+                            {
+                                key: 'knowledge',
+                                label: '知识',
+                                content: (
+                                    <div className="flex-1 overflow-y-auto h-full">
+                                        <TabKnowledge agent={agent} setAgent={setAgent} />
+                                    </div>
+                                ),
+                            },
+                            {
+                                key: 'data',
+                                label: '数据',
+                                content: (
+                                    <div className="flex-1 overflow-y-auto h-full">
+                                        <TabData agent={agent} setAgent={setAgent} />
+                                    </div>
+                                ),
+                            },
                         ]}
-                        className="flex-1"
+                        selectedTab={selectedTab}
+                        onSelectTab={setSelectedTab}
                     />
                 </div>
             </div>

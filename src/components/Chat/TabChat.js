@@ -250,10 +250,10 @@ export default function TabChat({ agent, setAgent, isHistoryListVisible }) {
                 </div>
             )}
             <div className="flex-1 flex flex-col h-full">
-                <div className="flex-1 overflow-y-auto p-4">
+                <div className="flex-1 overflow-y-auto p-4 h-full">
                     <MessageList messages={messages} />
                 </div>
-                <MessageInput onSendMessage={handleSendMessage} className="bg-white p-2" />
+                <MessageInput onSendMessage={handleSendMessage} />
             </div>
         </div>
     );

@@ -14,7 +14,7 @@ export default function MessageInput({ onSendMessage }) {
     };
 
     return (
-        <div className="sticky bottom-0 bg-white">
+        <div className="sticky bottom-0 bg-white p-2">
             {/* <input
                 type="file"
                 className="mb-2"

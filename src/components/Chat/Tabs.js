@@ -1,25 +1,21 @@
-import React, { useState } from 'react';
+import React from 'react';
 
-export default function Tabs({ tabs }) {
-    const [activeTab, setActiveTab] = useState(tabs[0].key);
-
+export default function Tabs({ tabs, selectedTab, onSelectTab }) {
     return (
-        <div className="flex flex-col h-full">
-            <div className="flex space-x-4 mb-4 sticky top-0 bg-white z-10">
+        <div className="flex-1 flex flex-col">
+            <ul className="flex border-b-2 border-gray-200 bg-white sticky top-0 z-10">
                 {tabs.map((tab) => (
-                    <button
+                    <li
                         key={tab.key}
-                        onClick={() => setActiveTab(tab.key)}
-                        className={`px-4 py-2 rounded-lg transition-colors duration-300`}
+                        className={`cursor-pointer p-2 ${selectedTab === tab.key ? 'border-b-2 border-blue-500' : ''}`}
+                        onClick={() => onSelectTab(tab.key)}
                     >
                         {tab.label}
-                    </button>
+                    </li>
                 ))}
-            </div>
-            <div className="flex-1 p-4 bg-gray-50 rounded-lg shadow-inner">
-                {tabs.map((tab) => (
-                    activeTab === tab.key && <div key={tab.key} className="h-full">{tab.content}</div>
-                ))}
+            </ul>
+            <div className="flex-1 overflow-y-auto">
+                {tabs.find((tab) => tab.key === selectedTab)?.content}
             </div>
         </div>
     );

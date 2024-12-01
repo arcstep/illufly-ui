@@ -8,7 +8,7 @@ export default function HistoryList({ historyId, historyList, onSelectHistory, o
         <div className="w-full md:w-1/6 p-4 border-b md:border-b-0 md:border-r flex flex-col h-full">
             <div className="flex justify-center mb-4">
                 <button onClick={onNewHistory} className="w-full p-2 bg-gray-300 text-black rounded">
-                    +
+                    + 新建对话
                 </button>
             </div>
             <div className="flex-1 overflow-y-auto md:max-h-none max-h-64 min-h-32">
@@ -16,7 +16,7 @@ export default function HistoryList({ historyId, historyList, onSelectHistory, o
                     <button
                         key={history}
                         onClick={() => onSelectHistory(history)}
-                        className={`p-2 rounded ${history === historyId ? 'bg-blue-500 text-white' : 'bg-gray-300 text-black'}`}
+                        className={`p-2 rounded mb-1 ${history === historyId ? 'bg-blue-500 text-white' : 'bg-gray-300 text-black'}`}
                     >
                         {history}
                     </button>

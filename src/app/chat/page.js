@@ -30,6 +30,7 @@ export default function Chat() {
 
     useEffect(() => {
         setIsLoading(false);
+        handleSelectAgent(agent);
     }, []);
 
     // 确保 messagesRef 始终与 messages 同步
@@ -37,7 +38,7 @@ export default function Chat() {
         messagesRef.current = messages;
     }, [messages]);
 
-    const handleSelectAgent = (agent) => {
+    const handleSelectAgent = async (agent) => {
         setAgent(agent);
         get_agent_history_list(agent, (historyList) => {
             console.log("historyList >>> ", historyList);
@@ -83,8 +84,7 @@ export default function Chat() {
 
                     events.forEach((entry) => {
                         const { id, event, data } = entry;
-                        const parsedData = JSON.parse(data);
-                        const { block_type, content, content_id, created_at } = parsedData;
+                        const { block_type, content, content_id, created_at } = JSON.parse(data);
 
                         if (block_type === 'human') {
                             // 人类消息
@@ -93,7 +93,7 @@ export default function Chat() {
                                     id: `${callingId}-human`,
                                     sender: 'user',
                                     logo: <FontAwesomeIcon icon={faUser} />,
-                                    name: user.username,
+                                    name: '你',
                                     segments: [{ type: block_type, content }],
                                     timestamp: new Date(created_at).toLocaleString(),
                                 };

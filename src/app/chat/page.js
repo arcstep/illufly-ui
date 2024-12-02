@@ -32,7 +32,7 @@ export default function Chat() {
                 onFetchUser={fetchUser}
                 onRefreshToken={refreshToken}
             />
-            <div className="flex flex-1 flex-row h-full">
+            <div className="flex flex-1 flex-col md:flex-row h-full">
                 {isAgentListVisible && (
                     <AgentList
                         onChangeAgent={setAgent}

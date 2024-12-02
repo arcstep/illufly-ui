@@ -15,10 +15,10 @@ export default function MessageList({ messages }) {
     }, [messages]);
 
     return (
-        <div className="h-full overflow-y-auto mb-4">
+        <div className="h-full overflow-y-auto">
             <ul>
                 {messages.map((message) => (
-                    <li key={message.id} className="flex items-start mb-4">
+                    <li key={message.id} className="flex items-start">
                         <div className="mr-2">{message.logo}</div>
                         <div>
                             <div className="font-semibold">{message.name}</div>

@@ -6,8 +6,8 @@ import Header from '../../components/Chat/Header';
 import AgentList from '../../components/Chat/AgentList';
 import Tabs from '../../components/Chat/Tabs';
 import TabChat from '../../components/Chat/TabChat';
-import TabSettings from '../../components/Chat/TabSettings';
-import TabLearn from '../../components/Chat/TabLearn';
+import TabModel from '../../components/Chat/TabModel';
+import TabPrompt from '../../components/Chat/TabPrompt';
 import TabKnowledge from '../../components/Chat/TabKnowledge';
 import TabData from '../../components/Chat/TabData';
 
@@ -54,19 +54,19 @@ export default function Chat() {
                             },
                             {
                                 key: 'settings',
-                                label: '设置',
+                                label: '模型',
                                 content: (
                                     <div className="flex-1 overflow-y-auto h-full">
-                                        <TabSettings agent={agent} setAgent={setAgent} />
+                                        <TabModel agent={agent} setAgent={setAgent} />
                                     </div>
                                 ),
                             },
                             {
                                 key: 'learn',
-                                label: '训练',
+                                label: '提示语',
                                 content: (
                                     <div className="flex-1 overflow-y-auto h-full">
-                                        <TabLearn agent={agent} setAgent={setAgent} />
+                                        <TabPrompt agent={agent} setAgent={setAgent} />
                                     </div>
                                 ),
                             },

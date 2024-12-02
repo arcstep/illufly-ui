@@ -6,10 +6,13 @@ import rehypeKatex from 'rehype-katex';
 import rehypeHighlight from 'rehype-highlight';
 import remarkBreaks from 'remark-breaks';
 import remarkEmoji from 'remark-emoji';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCheck, faStar, faThumbsUp, faThumbsDown } from '@fortawesome/free-solid-svg-icons';
 
 export default function MessageList({ messages }) {
     const messagesEndRef = useRef(null);
     const [selectedMessageIds, setSelectedMessageIds] = useState([]);
+    const [attitude, setAttitude] = useState({});
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -21,6 +24,16 @@ export default function MessageList({ messages }) {
                 ? prevSelected.filter((selectedId) => selectedId !== id)
                 : [...prevSelected, id]
         );
+    };
+
+    const handleAttitudeChange = (id, type) => {
+        setAttitude((prev) => ({
+            ...prev,
+            [id]: {
+                ...prev[id],
+                [type]: !prev[id]?.[type],
+            },
+        }));
     };
 
     const handleShareMessages = () => {
@@ -47,14 +60,48 @@ export default function MessageList({ messages }) {
                             <div className="flex flex-col items-center mr-4">
                                 {message.logo}
                                 <div
-                                    className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                                    className={`mt-2 flex flex-col items-center ${selectedMessageIds.includes(message.id) || attitude[message.id]?.star ||
+                                        attitude[message.id]?.like || attitude[message.id]?.dislike
+                                        ? 'opacity-100'
+                                        : 'opacity-0 group-hover:opacity-100'
+                                        } transition-opacity duration-300`}
                                 >
                                     <button
-                                        className={`cursor-pointer w-6 h-6 rounded-full ${selectedMessageIds.includes(message.id) ? 'bg-blue-500' : 'bg-gray-300'
+                                        className={`cursor-pointer w-6 h-6 rounded-full mb-2 flex items-center justify-center ${selectedMessageIds.includes(message.id) ? 'bg-blue-500 text-white' : 'bg-gray-300 text-gray-500'
                                             }`}
                                         onClick={() => handleSelectMessage(message.id)}
                                         title="点击选择/取消选择"
-                                    />
+                                    >
+                                        <FontAwesomeIcon icon={faCheck} />
+                                    </button>
+                                    <button
+                                        className={`cursor-pointer w-6 h-6 rounded-full mb-2 flex items-center justify-center ${attitude[message.id]?.star ? 'bg-yellow-500 text-white' : 'bg-gray-300 text-gray-500'
+                                            }`}
+                                        onClick={() => handleAttitudeChange(message.id, 'star')}
+                                        title="收藏"
+                                    >
+                                        <FontAwesomeIcon icon={faStar} />
+                                    </button>
+                                    {message.name !== '你' && (
+                                        <>
+                                            <button
+                                                className={`cursor-pointer w-6 h-6 rounded-full mb-2 flex items-center justify-center ${attitude[message.id]?.like ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-500'
+                                                    }`}
+                                                onClick={() => handleAttitudeChange(message.id, 'like')}
+                                                title="点赞"
+                                            >
+                                                <FontAwesomeIcon icon={faThumbsUp} />
+                                            </button>
+                                            <button
+                                                className={`cursor-pointer w-6 h-6 rounded-full flex items-center justify-center ${attitude[message.id]?.dislike ? 'bg-red-500 text-white' : 'bg-gray-300 text-gray-500'
+                                                    }`}
+                                                onClick={() => handleAttitudeChange(message.id, 'dislike')}
+                                                title="踩"
+                                            >
+                                                <FontAwesomeIcon icon={faThumbsDown} />
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                             <div className="flex-1">

@@ -40,7 +40,7 @@ export default function Chat() {
                         className="min-h-[100px] flex-shrink-0 overflow-y-auto max-h-full"
                     />
                 )}
-                <div className="flex-1 flex flex-col overflow-y-auto">
+                <div className="flex-1 flex flex-col overflow-y-auto h-full">
                     <Tabs
                         tabs={[
                             {

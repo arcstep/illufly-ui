@@ -2,7 +2,7 @@ import React from 'react';
 
 export default function Tabs({ tabs, selectedTab, onSelectTab }) {
     return (
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col h-full">
             <ul className="flex border-b-2 border-gray-200 bg-white sticky top-0 z-10">
                 {tabs.map((tab) => (
                     <li
@@ -14,7 +14,7 @@ export default function Tabs({ tabs, selectedTab, onSelectTab }) {
                     </li>
                 ))}
             </ul>
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto h-full">
                 {tabs.find((tab) => tab.key === selectedTab)?.content}
             </div>
         </div>

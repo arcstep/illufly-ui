@@ -9,8 +9,6 @@ import Tabs from '../../components/Chat/Tabs';
 import TabChat from '../../components/Chat/TabChat';
 import TabModel from '../../components/Chat/TabModel';
 import TabPrompt from '../../components/Chat/TabPrompt';
-import TabKnowledge from '../../components/Chat/TabKnowledge';
-import TabData from '../../components/Chat/TabData';
 
 export default function Chat() {
     const { user, logout, fetchUser, refreshToken } = useAuth();
@@ -68,24 +66,6 @@ export default function Chat() {
                                 content: (
                                     <div className="flex-1 overflow-y-auto h-full">
                                         <TabPrompt agent={agent} setAgent={setAgent} />
-                                    </div>
-                                ),
-                            },
-                            {
-                                key: 'knowledge',
-                                label: '知识',
-                                content: (
-                                    <div className="flex-1 overflow-y-auto h-full">
-                                        <TabKnowledge agent={agent} setAgent={setAgent} />
-                                    </div>
-                                ),
-                            },
-                            {
-                                key: 'data',
-                                label: '数据',
-                                content: (
-                                    <div className="flex-1 overflow-y-auto h-full">
-                                        <TabData agent={agent} setAgent={setAgent} />
                                     </div>
                                 ),
                             },

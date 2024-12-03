@@ -11,7 +11,6 @@ export default function AgentList({ onChangeAgent, selected_agent }) {
 
     return (
         <div className="w-full md:w-1/6 p-4 border-b md:border-b-0 md:border-r flex flex-col">
-            <h2 className="text-lg md:text-xl font-bold mb-4">智能体</h2>
             <ul className="flex-1 overflow-y-auto md:max-h-none max-h-64 min-h-32">
                 {agents.map(agent => (
                     <li

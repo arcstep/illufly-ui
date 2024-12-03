@@ -238,7 +238,7 @@ export default function TabChat({ agent, setAgent, isHistoryListVisible }) {
     return (
         <div className="flex flex-1 flex-col md:flex-row h-full">
             {isHistoryListVisible && (
-                <div className="w-full md:w-1/4 h-full flex flex-col border-r">
+                <div className="w-full md:w-1/4 h-full flex flex-col">
                     <div className="flex-1 overflow-y-auto">
                         <HistoryList
                             historyId={historyId}

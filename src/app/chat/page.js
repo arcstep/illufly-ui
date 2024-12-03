@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import Header from '../../components/Header';
 import AgentList from '../../components/Chat/AgentList';
+import MiniAgentList from '../../components/Chat/MiniAgentList';
 import Tabs from '../../components/Chat/Tabs';
 import TabChat from '../../components/Chat/TabChat';
 import TabModel from '../../components/Chat/TabModel';
@@ -22,10 +23,6 @@ export default function Chat() {
     return (
         <div className="p-10 h-screen flex flex-col">
             <Header
-                isAgentListVisible={isAgentListVisible}
-                setIsAgentListVisible={setIsAgentListVisible}
-                isHistoryListVisible={isHistoryListVisible}
-                setIsHistoryListVisible={setIsHistoryListVisible}
                 username={user.username}
                 onLogout={logout}
                 onFetchUser={fetchUser}
@@ -33,10 +30,28 @@ export default function Chat() {
                 currentPath="/chat"
             />
             <div className="flex flex-1 flex-col md:flex-row h-full">
-                {isAgentListVisible && (
+                {isAgentListVisible ? (
                     <AgentList
                         onChangeAgent={setAgent}
                         selected_agent={agent}
+                        setIsAgentListVisible={setIsAgentListVisible}
+                        isAgentListVisible={isAgentListVisible}
+                        setIsHistoryListVisible={setIsHistoryListVisible}
+                        isHistoryListVisible={isHistoryListVisible}
+                    />
+                ) : (
+                    <MiniAgentList
+                        agents={[
+                            { id: 'fake_llm', name: '模拟', icon: '🤖' },
+                            { id: 'chat', name: '聊天', icon: '💬' },
+                            { id: 'learn', name: '训练', icon: '🧑‍🎓' }
+                        ]}
+                        onChangeAgent={setAgent}
+                        selected_agent={agent}
+                        toggleAgentList={() => setIsAgentListVisible(!isAgentListVisible)}
+                        toggleHistoryList={() => setIsHistoryListVisible(!isHistoryListVisible)}
+                        isAgentListVisible={isAgentListVisible}
+                        isHistoryListVisible={isHistoryListVisible}
                     />
                 )}
                 <div className="flex-1 flex flex-col overflow-y-auto h-full">

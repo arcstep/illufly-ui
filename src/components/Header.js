@@ -32,31 +32,6 @@ export default function Header({
                 ))}
             </div>
             <div className="flex items-center">
-                <div className="flex">
-                    {setIsAgentListVisible && (
-                        <button
-                            onClick={() => setIsAgentListVisible(!isAgentListVisible)}
-                            className={`mr-2 px-3 py-1 rounded-full transition-all duration-300 ${isAgentListVisible ? 'bg-gradient-to-r from-yellow-400 to-red-500 text-white shadow-lg' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
-                        >
-                            <FontAwesomeIcon
-                                icon={faRobot}
-                                style={{ color: isAgentListVisible ? 'white' : 'lightgray' }}
-                            />
-                        </button>
-                    )}
-                    {setIsHistoryListVisible && (
-                        <button
-                            onClick={() => setIsHistoryListVisible(!isHistoryListVisible)}
-                            className={`mr-2 px-3 py-1 rounded-full transition-all duration-300 ${isHistoryListVisible ? 'bg-gradient-to-r from-yellow-400 to-red-500 text-white shadow-lg' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
-                        >
-                            <FontAwesomeIcon
-                                icon={faHistory}
-                                style={{ color: isHistoryListVisible ? 'white' : 'lightgray' }}
-                            />
-                        </button>
-                    )}
-                </div>
-
                 <UserMenu
                     username={username}
                     onLogout={onLogout}

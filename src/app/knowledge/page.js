@@ -1,9 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-
 import { useAuth } from '../../context/AuthContext';
-import Header from '../../components/Header';
+import Header from '../../components/Chat/Header';
 import AgentList from '../../components/Chat/AgentList';
 import Tabs from '../../components/Chat/Tabs';
 import TabChat from '../../components/Chat/TabChat';
@@ -12,7 +11,7 @@ import TabPrompt from '../../components/Chat/TabPrompt';
 import TabKnowledge from '../../components/Chat/TabKnowledge';
 import TabData from '../../components/Chat/TabData';
 
-export default function Chat() {
+export default function Knowledge() {
     const { user, logout, fetchUser, refreshToken } = useAuth();
     const [isAgentListVisible, setIsAgentListVisible] = useState(true);
     const [isHistoryListVisible, setIsHistoryListVisible] = useState(true);
@@ -32,7 +31,6 @@ export default function Chat() {
                 onLogout={logout}
                 onFetchUser={fetchUser}
                 onRefreshToken={refreshToken}
-                currentPath="/chat"
             />
             <div className="flex flex-1 flex-col md:flex-row h-full">
                 {isAgentListVisible && (

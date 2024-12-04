@@ -36,7 +36,7 @@ export default function MarkdownRenderer({ content, className = '' }) {
     );
 
     return (
-        <div className={`prose prose-sm max-w-none ${className} bg-gray-100 p-6 rounded-lg shadow-md`}>
+        <div className={`prose prose-sm max-w-none ${className} bg-gray-100 p-2 rounded-lg shadow-md`}>
             <ReactMarkdown
                 remarkPlugins={[
                     remarkGfm,

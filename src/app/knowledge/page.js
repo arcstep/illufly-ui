@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import Header from '../../components/Header';
 import { get_markmeta_files, get_markmeta_file } from '../../utils/markmeta';
-import MarkdownRenderer from '../../components/MarkMeta/MarkdownRenderer';
+import KnowledgeCard from '../../components/Knowledge/KnowledgeCard';
 
 export default function KnowledgePage() {
     const { user, logout, fetchUser, refreshToken } = useAuth();
@@ -107,27 +107,11 @@ export default function KnowledgePage() {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         {files.map((file) => (
-                            <div
+                            <KnowledgeCard
                                 key={file.path}
-                                className="border rounded-lg shadow-sm hover:shadow-md transition-shadow p-4 bg-white"
-                            >
-                                <div className="mb-2">
-                                    <h3 className="font-medium text-gray-900 truncate">
-                                        {file.name}
-                                    </h3>
-                                    <div className="text-xs text-gray-500 flex justify-between">
-                                        <span>{new Date(file.lastModified).toLocaleString()}</span>
-                                        <span>{fileContents[file.path]?.length || 0} 字</span>
-                                    </div>
-                                </div>
-
-                                <div className="h-32 overflow-hidden relative">
-                                    <MarkdownRenderer
-                                        content={fileContents[file.path] || '加载中...'}
-                                    />
-                                    <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent" />
-                                </div>
-                            </div>
+                                file={file}
+                                content={fileContents[file.path]}
+                            />
                         ))}
                     </div>
                 )}

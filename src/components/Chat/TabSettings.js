@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function TabModel({ agent, setAgent }) {
+export default function TabSettings({ agent, setAgent }) {
     return (
         <div className="flex-1 overflow-y-auto min-h-[150px] p-4">
             <h2>模型配置</h2>

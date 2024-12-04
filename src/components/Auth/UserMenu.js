@@ -37,20 +37,20 @@ export default function UserMenu({ username, onLogout, onFetchUser, onRefreshTok
                         onClick={onFetchUser}
                         className="w-full text-left px-4 py-2 text-white hover:bg-gray-700"
                     >
-                        账户信息
+                        魔法师信息
                     </button>
                     <button
                         onClick={onRefreshToken}
                         className="w-full text-left px-4 py-2 text-white hover:bg-gray-700"
                     >
-                        刷新令牌
+                        更新魔法令牌
                     </button>
                     <hr className="border-gray-600" />
                     <button
                         onClick={onLogout}
                         className="w-full text-left px-4 py-2 text-red-500 hover:bg-gray-700"
                     >
-                        退出
+                        离开梦幻岛
                     </button>
                 </div>
             )}

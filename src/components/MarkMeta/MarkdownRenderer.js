@@ -27,8 +27,8 @@ const customSchema = {
 
 export default function MarkdownRenderer({ content, className = '' }) {
     const CustomTag = ({ tagName, ...props }) => (
-        <div className="relative border border-gray-300 p-4 my-4 rounded-md -mt-2.5">
-            <span className="absolute top-0 left-2 bg-white px-2 text-xs text-gray-500 border border-gray-300 rounded">
+        <div className="relative border border-blue-300 p-4 my-4 rounded-md bg-blue-50">
+            <span className="absolute top-0 left-2 bg-white px-2 text-xs text-blue-500 border border-blue-300 rounded -mt-2.5">
                 {tagName}
             </span>
             <div {...props} />
@@ -36,7 +36,7 @@ export default function MarkdownRenderer({ content, className = '' }) {
     );
 
     return (
-        <div className={`prose prose-sm max-w-none ${className}`}>
+        <div className={`prose prose-sm max-w-none ${className} bg-gray-100 p-6 rounded-lg shadow-md`}>
             <ReactMarkdown
                 remarkPlugins={[
                     remarkGfm,
@@ -56,7 +56,11 @@ export default function MarkdownRenderer({ content, className = '' }) {
                     no_final_answer: (props) => <CustomTag tagName="no_final_answer" {...props} />,
                     context: (props) => <CustomTag tagName="context" {...props} />,
                     knowledge: (props) => <CustomTag tagName="knowledge" {...props} />,
-                    OUTLINE: (props) => <CustomTag tagName="OUTLINE" {...props} />
+                    OUTLINE: (props) => <CustomTag tagName="OUTLINE" {...props} />,
+                    h1: ({ node, ...props }) => <h1 className="text-3xl font-bold my-4" {...props} />,
+                    h2: ({ node, ...props }) => <h2 className="text-2xl font-semibold my-3" {...props} />,
+                    p: ({ node, ...props }) => <p className="text-base leading-relaxed my-2" {...props} />,
+                    pre: ({ node, ...props }) => <pre className="bg-gray-800 text-white p-4 rounded-md my-4 overflow-x-auto" {...props} />
                 }}
             >
                 {content || ''}

@@ -27,7 +27,7 @@ export default function LoginPage() {
             if (err.response && err.response.data && err.response.data.message) {
                 setError(err.response.data.message);
             } else {
-                setError('登录失败，请稍后再试');
+                setError('进入梦幻岛失败，请稍后再试');
             }
         } finally {
             setLoading(false);
@@ -37,7 +37,7 @@ export default function LoginPage() {
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
             <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-center">✨🦋 登录</h1>
+                <h1 className="text-3xl sm:text-3xl md:text-4xl lg:text-4xl font-bold mb-6 text-center">✨🦋 欢迎魔法师归来</h1>
                 <form onSubmit={handleSubmit}>
                     <div className="mb-4">
                         <label htmlFor="email" className="block text-gray-700 mb-2">
@@ -74,7 +74,7 @@ export default function LoginPage() {
                         className={`w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors duration-300 ${loading ? 'opacity-50 cursor-not-allowed' : ''
                             }`}
                     >
-                        {loading ? '登录中...' : '登录'}
+                        {loading ? '传送中...' : '进入梦幻岛'}
                     </button>
                 </form>
                 <div className="mt-4 flex justify-between items-center">

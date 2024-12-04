@@ -9,6 +9,7 @@ export default function MessageInput({ onSendMessage }) {
             if (text.trim()) {
                 onSendMessage(text);
                 setText(''); // 清空输入框
+                e.target.style.height = 'auto'; // 重置高度
             }
         }
     };
@@ -41,10 +42,11 @@ export default function MessageInput({ onSendMessage }) {
                 ></textarea>
                 <button
                     className="bg-blue-500 text-white px-4 py-2 ml-2 rounded hover:bg-blue-600"
-                    onClick={() => {
+                    onClick={(e) => {
                         if (text.trim()) {
                             onSendMessage(text);
                             setText(''); // 清空输入框
+                            e.target.previousSibling.style.height = 'auto'; // 重置高度
                         }
                     }}
                 >

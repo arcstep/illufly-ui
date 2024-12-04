@@ -8,8 +8,7 @@ import AgentList from '../../components/Chat/AgentList';
 import MiniAgentList from '../../components/Chat/MiniAgentList';
 import Tabs from '../../components/Chat/Tabs';
 import TabChat from '../../components/Chat/TabChat';
-import TabModel from '../../components/Chat/TabModel';
-import TabPrompt from '../../components/Chat/TabPrompt';
+import TabSettings from '../../components/Chat/TabSettings';
 
 export default function Chat() {
     const { user, logout, fetchUser, refreshToken } = useAuth();
@@ -68,22 +67,13 @@ export default function Chat() {
                             },
                             {
                                 key: 'settings',
-                                label: '模型',
+                                label: '配置',
                                 content: (
                                     <div className="flex-1 overflow-y-auto h-full">
-                                        <TabModel agent={agent} setAgent={setAgent} />
+                                        <TabSettings agent={agent} setAgent={setAgent} />
                                     </div>
                                 ),
-                            },
-                            {
-                                key: 'learn',
-                                label: '提示语',
-                                content: (
-                                    <div className="flex-1 overflow-y-auto h-full">
-                                        <TabPrompt agent={agent} setAgent={setAgent} />
-                                    </div>
-                                ),
-                            },
+                            }
                         ]}
                         selectedTab={selectedTab}
                         onSelectTab={setSelectedTab}

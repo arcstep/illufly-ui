@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheck, faStar, faThumbsUp, faThumbsDown } from '@fortawesome/free-solid-svg-icons';
+import { faCheck, faStar, faThumbsUp, faThumbsDown, faCopy } from '@fortawesome/free-solid-svg-icons';
 import MarkdownRenderer from '../MarkMeta/MarkdownRenderer';
 
 export default function MessageList({ messages }) {
     const messagesEndRef = useRef(null);
     const [selectedMessageIds, setSelectedMessageIds] = useState([]);
     const [attitude, setAttitude] = useState({});
+    const [copySuccess, setCopySuccess] = useState({ show: false, position: { x: 0, y: 0 } });
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -39,6 +40,18 @@ export default function MessageList({ messages }) {
 
     const handleCancelShare = () => {
         setSelectedMessageIds([]);
+    };
+
+    const handleCopyContent = (content, event) => {
+        navigator.clipboard.writeText(content).then(() => {
+            setCopySuccess({
+                show: true,
+                position: { x: event.clientX, y: event.clientY }
+            });
+            setTimeout(() => setCopySuccess({ show: false, position: { x: 0, y: 0 } }), 500);
+        }).catch(err => {
+            console.error('复制失败:', err);
+        });
     };
 
     return (
@@ -105,11 +118,18 @@ export default function MessageList({ messages }) {
                                 <div className="font-semibold text-gray-800">{message.name}</div>
                                 {message.segments.map((segment, index) => (
                                     <div key={index} className="bg-white p-2 mb-2 rounded">
-                                        <div className="flex justify-between items-center text-xs text-gray-500 mb-1">
+                                        <div className="flex items-center text-xs text-gray-500 mb-1">
                                             <span className="inline-block bg-blue-100 text-blue-800 rounded-full px-2 py-0.5">
                                                 {segment.type.toUpperCase()}
                                             </span>
-                                            <span className="text-gray-400">{message.timestamp}</span>
+                                            <button
+                                                className="ml-2 text-gray-400 hover:text-gray-600 focus:text-gray-800 transition-colors duration-200"
+                                                onClick={(e) => handleCopyContent(segment.content, e)}
+                                                title="复制内容"
+                                            >
+                                                <FontAwesomeIcon icon={faCopy} />
+                                            </button>
+                                            <span className="text-gray-400 ml-auto">{message.timestamp}</span>
                                         </div>
                                         <MarkdownRenderer
                                             content={segment.content}
@@ -123,6 +143,18 @@ export default function MessageList({ messages }) {
                     <div ref={messagesEndRef} />
                 </ul>
             </div>
+            {copySuccess.show && (
+                <div
+                    className="absolute bg-green-500 text-white px-2 py-1 rounded shadow-lg"
+                    style={{
+                        top: copySuccess.position.y - 30,
+                        left: copySuccess.position.x,
+                        zIndex: 200
+                    }}
+                >
+                    复制成功
+                </div>
+            )}
             {selectedMessageIds.length > 0 && (
                 <div className="sticky bottom-0 bg-white p-2 shadow-md flex justify-between">
                     <button

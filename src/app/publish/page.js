@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import Header from '../../components/Header';
 
-export default function DataPage() {
+export default function PublishPage() {
     const { user, logout, fetchUser, refreshToken } = useAuth();
     const [error, setError] = useState(null);
 
@@ -31,7 +31,7 @@ export default function DataPage() {
                 onLogout={logout}
                 onFetchUser={fetchUser}
                 onRefreshToken={refreshToken}
-                currentPath="/data"
+                currentPath="/publish"
             />
             <div className="flex-1 overflow-y-auto min-h-[150px] p-4">
             </div>

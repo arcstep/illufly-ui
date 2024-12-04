@@ -14,7 +14,7 @@ import TabPrompt from '../../components/Chat/TabPrompt';
 export default function Chat() {
     const { user, logout, fetchUser, refreshToken } = useAuth();
     const [isAgentListVisible, setIsAgentListVisible] = useState(true);
-    const [isHistoryListVisible, setIsHistoryListVisible] = useState(true);
+    const [isHistoryListVisible, setIsHistoryListVisible] = useState(false);
     const [agent, setAgent] = useState('fake_llm');
     const [selectedTab, setSelectedTab] = useState('chat');
 

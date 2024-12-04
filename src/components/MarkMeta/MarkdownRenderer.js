@@ -12,15 +12,29 @@ import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 // 自定义 schema，允许某些标签
 const customSchema = {
     ...defaultSchema,
-    tagNames: [...defaultSchema.tagNames, 'question', 'answer'], // 添加自定义标签
+    tagNames: [...defaultSchema.tagNames, 'question', 'final_answer', 'no_final_answer', 'context', 'knowledge', 'OUTLINE'], // 添加自定义标签
     attributes: {
         ...defaultSchema.attributes,
+        // 允许自定义标签的属性
         question: ['className'],
-        answer: ['className'] // 允许自定义标签的属性
+        final_answer: ['className'],
+        no_final_answer: ['className'],
+        context: ['className'],
+        knowledge: ['className'],
+        OUTLINE: ['className']
     }
 };
 
 export default function MarkdownRenderer({ content, className = '' }) {
+    const CustomTag = ({ tagName, ...props }) => (
+        <div className="relative border border-gray-300 p-4 my-4 rounded-md -mt-2.5">
+            <span className="absolute top-0 left-2 bg-white px-2 text-xs text-gray-500 border border-gray-300 rounded">
+                {tagName}
+            </span>
+            <div {...props} />
+        </div>
+    );
+
     return (
         <div className={`prose prose-sm max-w-none ${className}`}>
             <ReactMarkdown
@@ -37,22 +51,12 @@ export default function MarkdownRenderer({ content, className = '' }) {
                     rehypeHighlight
                 ]}
                 components={{
-                    question: ({ node, ...props }) => (
-                        <div className="relative border border-gray-300 p-4 my-4 rounded-md">
-                            <span className="absolute top-0 left-2 bg-white px-2 text-xs text-gray-500 border border-gray-300 rounded">
-                                question
-                            </span>
-                            <div {...props} />
-                        </div>
-                    ),
-                    answer: ({ node, ...props }) => (
-                        <div className="relative border border-gray-300 p-4 my-4 rounded-md">
-                            <span className="absolute top-0 left-2 bg-white px-2 text-xs text-gray-500 border border-gray-300 rounded">
-                                answer
-                            </span>
-                            <div {...props} />
-                        </div>
-                    )
+                    question: (props) => <CustomTag tagName="question" {...props} />,
+                    final_answer: (props) => <CustomTag tagName="final_answer" {...props} />,
+                    no_final_answer: (props) => <CustomTag tagName="no_final_answer" {...props} />,
+                    context: (props) => <CustomTag tagName="context" {...props} />,
+                    knowledge: (props) => <CustomTag tagName="knowledge" {...props} />,
+                    OUTLINE: (props) => <CustomTag tagName="OUTLINE" {...props} />
                 }}
             >
                 {content || ''}

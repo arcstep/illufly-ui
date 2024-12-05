@@ -8,7 +8,8 @@ export default function RegisterPage() {
     }, []);
 
     return (
-        <div className="p-10 h-screen flex flex-col">
+        <div className="p-5 h-screen flex flex-col">
+            <div className="h-10"></div>
         </div>
     );
 }

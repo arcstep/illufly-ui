@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import MarkdownRenderer from '../MarkMeta/MarkdownRenderer';
+import MarkdownShow from '../MarkMeta/MarkdownShow';
 import CopyButton from '../Common/CopyButton';
 
 export default function RAGCard({ content }) {
@@ -45,7 +46,7 @@ export default function RAGCard({ content }) {
                         )}
                         {item.text ? (
                             <MarkdownRenderer
-                                content={item.text.substring(0, 50) + '...'}
+                                content={item.text.substring(0, 100) + '...'}
                                 className="text-xs text-gray-600 mt-1"
                             />
                         ) : (
@@ -74,23 +75,11 @@ export default function RAGCard({ content }) {
                 {showAll ? `仅展示强相关检索结果` : `展示全部${data.length}个检索结果`}
             </button>
 
-            {isModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded shadow-lg max-w-lg w-full">
-                        <h2 className="text-lg font-semibold mb-4">详细信息</h2>
-                        <MarkdownRenderer
-                            content={modalContent}
-                            className="text-sm text-gray-700 prose prose-sm max-w-none"
-                        />
-                        <button
-                            className="mt-4 text-blue-500"
-                            onClick={closeModal}
-                        >
-                            关闭
-                        </button>
-                    </div>
-                </div>
-            )}
+            <MarkdownShow
+                isOpen={isModalOpen}
+                content={modalContent}
+                onClose={closeModal}
+            />
         </div>
     );
 }

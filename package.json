@@ -30,7 +30,8 @@
     "remark-breaks": "^4.0.0",
     "remark-emoji": "^5.0.1",
     "remark-gfm": "^4.0.0",
-    "remark-math": "^6.0.0"
+    "remark-math": "^6.0.0",
+    "simplemde": "^1.11.2"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.20",

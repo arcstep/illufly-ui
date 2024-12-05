@@ -93,7 +93,7 @@ export default function KnowledgePage() {
     }
 
     return (
-        <div className="p-10 h-screen flex flex-col">
+        <div className="p-5 h-screen flex flex-col">
             <Header
                 username={user.username}
                 onLogout={logout}
@@ -101,6 +101,7 @@ export default function KnowledgePage() {
                 onRefreshToken={refreshToken}
                 currentPath="/knowledge"
             />
+            <div className="h-10"></div>
             <div className="flex-1 overflow-y-auto min-h-[150px] p-4">
                 {loading ? (
                     <div className="text-center py-4">加载中...</div>
@@ -111,6 +112,7 @@ export default function KnowledgePage() {
                                 key={file.path}
                                 file={file}
                                 content={fileContents[file.path]}
+                                knowledgeId={file.path}
                             />
                         ))}
                     </div>

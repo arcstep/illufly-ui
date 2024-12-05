@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faStar, faThumbsUp, faThumbsDown, faCopy } from '@fortawesome/free-solid-svg-icons';
 import MarkdownRenderer from '../MarkMeta/MarkdownRenderer';
+import RAGCard from '../RAG/RAGCard';
 
 export default function MessageList({ messages }) {
     const messagesEndRef = useRef(null);
@@ -131,10 +132,14 @@ export default function MessageList({ messages }) {
                                             </button>
                                             <span className="text-gray-400 ml-auto">{message.timestamp}</span>
                                         </div>
-                                        <MarkdownRenderer
-                                            content={segment.content}
-                                            className="text-sm text-gray-700 prose prose-sm max-w-none"
-                                        />
+                                        {segment.type === 'rag' ? (
+                                            <RAGCard content={segment.content} />
+                                        ) : (
+                                            <MarkdownRenderer
+                                                content={segment.content}
+                                                className="text-sm text-gray-700 prose prose-sm max-w-none"
+                                            />
+                                        )}
                                     </div>
                                 ))}
                             </div>

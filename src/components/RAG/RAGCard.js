@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import MarkdownRenderer from '../MarkMeta/MarkdownRenderer';
+import CopyButton from '../Common/CopyButton';
 
 export default function RAGCard({ content }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -9,8 +10,14 @@ export default function RAGCard({ content }) {
     // 解析JSON字符串
     const data = JSON.parse(content);
 
+    // 设置默认展示的最大项目数量
+    const maxDisplayedItems = 3;
+
+    // 过滤出distance小于1的项目
+    const filteredData = data.filter(item => item.meta?.distance < 1);
+
     // 根据showAll状态决定显示的项目数量
-    const displayedItems = showAll ? data : data.slice(0, 2);
+    const displayedItems = showAll ? data.slice(0, maxDisplayedItems) : filteredData;
 
     const handleViewDetails = (text) => {
         setModalContent(text);
@@ -43,7 +50,7 @@ export default function RAGCard({ content }) {
                             />
                         ) : (
                             <div className="text-xs text-gray-600 mt-1">
-                                无内容
+                                没有可展示的内容
                             </div>
                         )}
                         <div className="flex items-center mt-2">
@@ -58,15 +65,14 @@ export default function RAGCard({ content }) {
                             >
                                 查看详情
                             </button>
+                            <CopyButton content={item.text} />
                         </div>
                     </div>
                 ))}
             </div>
-            {data.length > 2 && (
-                <button className="text-blue-500 text-sm" onClick={toggleShowAll}>
-                    {showAll ? '收起' : '更多'}
-                </button>
-            )}
+            <button className="text-blue-500 text-sm mt-2" onClick={toggleShowAll}>
+                {showAll ? `仅展示强相关检索结果` : `展示全部${data.length}个检索结果`}
+            </button>
 
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

@@ -15,7 +15,7 @@ export default function Header({
                 {['/publish', '/knowledge', '/chat'].map((path) => (
                     <Link href={path} key={path}>
                         <span className={`px-3 py-1 rounded-full transition-all duration-300 ${currentPath === path ? 'bg-gradient-to-r from-blue-400 to-purple-400 text-white shadow-md' : 'bg-transparent text-gray-200 hover:bg-gray-600'}`}>
-                            {path === '/publish' && '魔法广场'}
+                            {path === '/publish' && '魔法展示'}
                             {path === '/knowledge' && '魔法笔记'}
                             {path === '/chat' && '咒语低吟'}
                         </span>

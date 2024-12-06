@@ -20,8 +20,7 @@ export default function Chat() {
     if (!user) return null;
 
     return (
-        <div className="p-5 h-screen flex flex-col">
-            <div className="h-10"></div>
+        <div className="p-5 pt-12 h-screen flex flex-col">
             <Header
                 username={user.username}
                 onLogout={logout}

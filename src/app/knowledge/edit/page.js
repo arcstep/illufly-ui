@@ -95,8 +95,7 @@ export default function KnowledgeEdit() {
     };
 
     return (
-        <div className="p-5 h-screen flex flex-col bg-gray-50">
-            <div className="h-10"></div>
+        <div className="p-5 pt-12 h-screen flex flex-col bg-gray-50">
             <Header
                 username={user?.username || '加载中...'}
                 onLogout={logout}

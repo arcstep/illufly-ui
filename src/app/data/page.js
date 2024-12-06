@@ -25,7 +25,7 @@ export default function DataPage() {
     }
 
     return (
-        <div className="p-10 h-screen flex flex-col">
+        <div className="p-5 pt-12 h-screen flex flex-col">
             <Header
                 username={user.username}
                 onLogout={logout}

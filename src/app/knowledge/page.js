@@ -93,7 +93,7 @@ export default function KnowledgePage() {
     }
 
     return (
-        <div className="p-5 h-screen flex flex-col">
+        <div className="p-5 pt-12 h-screen flex flex-col">
             <Header
                 username={user.username}
                 onLogout={logout}
@@ -101,7 +101,6 @@ export default function KnowledgePage() {
                 onRefreshToken={refreshToken}
                 currentPath="/knowledge"
             />
-            <div className="h-10"></div>
             <div className="flex-1 overflow-y-auto min-h-[150px] p-4">
                 {loading ? (
                     <div className="text-center py-4">加载中...</div>
@@ -118,7 +117,7 @@ export default function KnowledgePage() {
                     </div>
                 )}
 
-                <div className="mt-8">
+                {/* <div className="mt-8">
                     <form>
                         <div>
                             <p><label>经验知识清单</label></p>
@@ -129,7 +128,7 @@ export default function KnowledgePage() {
                             <p><input type="text" value={agent} onChange={(e) => setAgent(e.target.value)} /></p>
                         </div>
                     </form>
-                </div>
+                </div> */}
             </div>
         </div>
     );

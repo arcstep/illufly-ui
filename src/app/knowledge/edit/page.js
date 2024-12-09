@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { get_markmeta_file, update_markmeta_file } from '../../../utils/markmeta';
+import { get_knowledge, update_knowledge } from '../../../utils/knowledge';
 import { useAuth } from '../../../context/AuthContext';
 import Header from '../../../components/Header';
-import MarkdownRenderer from '../../../components/MarkMeta/MarkdownRenderer';
+import MarkdownRenderer from '../../../components/Knowledge/MarkdownRenderer';
 import SaveButton from '../../../components/Common/SaveButton';
 
 export default function KnowledgeEdit() {
@@ -22,32 +22,33 @@ export default function KnowledgeEdit() {
             const { searchParams } = new URL(window.location.href);
             const id = searchParams.get('knowledge_id');
             setKnowledgeId(id);
-            loadFileContent(id);
+            loadKnowledgeContent(id);
         }
     }, [fetchUser]);
 
-    const loadFileContent = (id) => {
+    const loadKnowledgeContent = (id) => {
         if (!id) return;
 
-        get_markmeta_file(
+        get_knowledge(
             id,
             (response) => {
                 try {
-                    if (response?.data?.content) {
+                    if (response?.data) {
                         const content = response.data.content;
                         setMarkdownContent(content);
                         setInitialContent(content);
                         setIsContentChanged(false);
                     }
                 } catch (err) {
-                    console.error('Error processing files:', err);
+                    console.error('Error processing knowledge:', err);
                 } finally {
                     setLoading(false);
                 }
             },
             (error) => {
-                console.error('Error loading file content:', error);
-            },
+                console.error('Error loading knowledge content:', error);
+                setLoading(false);
+            }
         );
     };
 
@@ -66,24 +67,31 @@ export default function KnowledgeEdit() {
         }
     };
 
-    const handleSave = async (event) => {
+    const handleSave = async () => {
         if (!knowledgeId) {
             console.error('Knowledge ID is not set');
             throw new Error('Knowledge ID is not set');
         }
 
         return new Promise((resolve, reject) => {
-            update_markmeta_file(
+            const updateData = {
+                content: markdownContent,
+                tags: null,  // 保持现有标签不变
+                summary: null,  // 保持现有摘要不变
+                source: null   // 保持现有来源不变
+            };
+
+            update_knowledge(
                 knowledgeId,
-                markdownContent,
+                updateData,
                 (response) => {
-                    console.log('文件更新成功:', response);
+                    console.log('知识更新成功:', response);
                     setInitialContent(markdownContent);
                     setIsContentChanged(false);
                     resolve(response);
                 },
                 (error) => {
-                    console.error('文件更新失败:', error);
+                    console.error('知识更新失败:', error);
                     reject(error);
                 }
             );
@@ -136,7 +144,7 @@ export default function KnowledgeEdit() {
                 ) : (
                     <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0">
                         <div className="flex-1 flex flex-col h-[calc(50vh-8rem)] lg:h-[calc(100vh-12rem)]">
-                            <div className="mb-2 text-sm font-medium text-gray-700">编辑区</div>
+                            <div className="mb-2 text-sm font-medium text-gray-700">��辑区</div>
                             <div className="flex-1 bg-white rounded-lg shadow-sm">
                                 <textarea
                                     className="w-full h-full p-4 border-0 rounded-lg resize-none font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none"

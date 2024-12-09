@@ -1,65 +1,84 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
-import MarkdownRenderer from '../MarkMeta/MarkdownRenderer';
+import MarkdownRenderer from './MarkdownRenderer';
 import CopyButton from '../Common/CopyButton';
-import MarkdownShow from '../MarkMeta/MarkdownShow';
+import KnowledgeModelShow from './KnowledgeModelShow';
+import { get_knowledge } from '../../utils/knowledge';
 
-function KnowledgeCard({ file, content, knowledgeId }) {
+/**
+ * 知识卡片组件
+ * @param {Object} props
+ * @param {Object} props.knowledge - 知识对象，包含 id, summary, tags, source 等
+ */
+function KnowledgeCard({ knowledge }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [modalContent, setModalContent] = useState('');
 
-    const handleViewDetails = () => {
-        setModalContent(content);
-        setIsModalOpen(true);
-    };
-
-    const closeModal = () => {
-        setIsModalOpen(false);
-        setModalContent('');
-    };
+    if (!knowledge) return null;
 
     return (
-        <div className="border rounded-lg shadow-sm hover:shadow-md transition-shadow p-2 bg-white">
-            <div className="mb-2">
-                <h3 className="font-medium text-gray-900 truncate">
-                    {file.name}
+        <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-4">
+            {/* 知识标题/摘要 */}
+            <div className="mb-3">
+                <h3 className="text-lg font-medium text-gray-900 line-clamp-2">
+                    <MarkdownRenderer content={knowledge.summary} />
                 </h3>
-                <div className="text-xs text-gray-500 flex justify-between">
-                    <span>{new Date(file.lastModified).toLocaleString()}</span>
-                    <span>{content?.length || 0} 字</span>
+            </div>
+
+            {/* 标签展示 */}
+            {knowledge.tags && knowledge.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                    {knowledge.tags.map((tag, index) => (
+                        <span
+                            key={index}
+                            className="px-2 py-0.5 text-xs bg-blue-50 text-blue-600 rounded-full"
+                        >
+                            {tag}
+                        </span>
+                    ))}
                 </div>
-            </div>
+            )}
 
-            <div className="h-36 overflow-hidden relative">
-                <MarkdownRenderer
-                    content={content && (content.replace(/<!--[\s\S]*?-->/g, '').substring(0, 100) + '...') || '加载中...'}
-                />
-                <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent" />
-            </div>
+            {/* 来源信息 */}
+            {knowledge.source && (
+                <div className="text-xs text-gray-500 mb-3">
+                    来源: {knowledge.source}
+                </div>
+            )}
 
-            <div className="flex items-center mt-2">
-                <button
-                    className="text-blue-500 text-sm"
-                    onClick={handleViewDetails}
-                >
-                    查看详情
-                </button>
-                <CopyButton content={content} />
+            {/* 操作按钮 */}
+            <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-100">
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="text-sm text-blue-600 hover:text-blue-700 transition-colors flex items-center gap-1"
+                    >
+                        查看详情
+                    </button>
+                    <CopyButton
+                        getContent={async () => {
+                            const response = await get_knowledge(knowledge.id);
+                            return response?.content?.text || '';
+                        }}
+                    />
+                </div>
                 <Link
-                    href={`/knowledge/edit?knowledge_id=${knowledgeId}`}
-                    className="ml-auto text-blue-500 text-sm"
+                    href={`/knowledge/edit?knowledge_id=${knowledge.id}`}
+                    className="text-sm text-blue-600 hover:text-blue-700 transition-colors"
                 >
                     编辑
                 </Link>
             </div>
 
-            <MarkdownShow
+            {/* 详情模态框 */}
+            <KnowledgeModelShow
                 isOpen={isModalOpen}
-                content={modalContent}
-                onClose={closeModal}
+                knowledge={knowledge}
+                get_knowledge={get_knowledge}
+                onClose={() => setIsModalOpen(false)}
             />
         </div>
     );
 }
 
 export default KnowledgeCard;
+

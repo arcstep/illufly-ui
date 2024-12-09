@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import MarkdownRenderer from '../MarkMeta/MarkdownRenderer';
-import MarkdownShow from '../MarkMeta/MarkdownShow';
+import MarkdownRenderer from '../Knowledge/MarkdownRenderer';
+import MarkdownShow from '../Knowledge/KnowledgeModelShow';
 import CopyButton from '../Common/CopyButton';
 
 export default function RAGCard({ content }) {

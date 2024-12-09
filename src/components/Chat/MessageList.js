@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faStar, faThumbsUp, faThumbsDown, faCopy } from '@fortawesome/free-solid-svg-icons';
-import MarkdownRenderer from '../MarkMeta/MarkdownRenderer';
+import MarkdownRenderer from '../Knowledge/MarkdownRenderer';
 import RAGCard from '../RAG/RAGCard';
 import CopyButton from '../Common/CopyButton';
 

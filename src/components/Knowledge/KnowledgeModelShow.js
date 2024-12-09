@@ -47,7 +47,6 @@ export default function KnowledgeModelShow({
                 <div className="px-6 py-4 border-b">
                     <div className="flex justify-between items-start">
                         <div className="flex-1">
-                            <h2 className="text-xl font-semibold mb-2">{knowledge?.summary || '知识详情'}</h2>
                             <div className="flex flex-col gap-2">
                                 {knowledge?.tags?.length > 0 && (
                                     <div className="flex flex-wrap gap-2">

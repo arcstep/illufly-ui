@@ -81,18 +81,32 @@ export const update_knowledge = async (id, {
     tags = null,
     summary = null,
     source = null
-}, onSuccess, onError) => {
+}) => {
     const formData = new FormData();
-    if (content !== null) formData.append('content', content);
-    if (tags !== null) {
-        tags.forEach(tag => formData.append('tags', tag));
-    }
-    if (summary !== null) formData.append('summary', summary);
-    if (source !== null) formData.append('source', source);
 
-    api.put(`/api/knowledge/${id}`, formData)
-        .then(onSuccess)
-        .catch(onError);
+    if (content !== null) {
+        formData.append('content', content);
+    }
+
+    if (tags !== null) {
+        formData.append('tags', tags.join(','));
+    }
+
+    if (summary !== null) {
+        formData.append('summary', summary);
+    }
+
+    if (source !== null) {
+        formData.append('source', source);
+    }
+
+    try {
+        const response = await api.put(`/api/knowledge/${id}`, formData);
+        return response.data;
+    } catch (error) {
+        console.error(`更新知识[${id}]失败:`, error);
+        throw error;
+    }
 };
 
 // 删除知识

@@ -1,15 +1,25 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, JSX } from 'react';
 
-export default function UserMenu({ username, onLogout, onFetchUser, onRefreshToken }) {
+interface UserMenuProps {
+    username?: string;
+    onLogout: () => void;
+    onFetchUser: () => void;
+    onRefreshToken: () => void;
+}
+
+export default function UserMenu({ username, onLogout, onFetchUser, onRefreshToken }: UserMenuProps): JSX.Element {
     const [isUserMenuVisible, setIsUserMenuVisible] = useState(false);
-    const menuRef = useRef(null);
+    const menuRef = useRef<HTMLDivElement>(null);
 
     // 限制显示的用户名长度
-    const displayName = username.length > 10 ? `${username.slice(0, 10)}...` : username;
+    let displayName = '未登录';
+    if (username) {
+        displayName = username.length > 10 ? `${username.slice(0, 10)}...` : username;
+    }
 
     useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (menuRef.current && !menuRef.current.contains(event.target)) {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
                 setIsUserMenuVisible(false);
             }
         };

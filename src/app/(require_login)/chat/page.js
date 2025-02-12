@@ -2,13 +2,13 @@
 
 import { useState } from 'react';
 
-import { useAuth } from '../../context/AuthContext';
-import Header from '../../components/Header';
-import AgentList from '../../components/Chat/AgentList';
-import MiniAgentList from '../../components/Chat/MiniAgentList';
-import Tabs from '../../components/Chat/Tabs';
-import TabChat from '../../components/Chat/TabChat';
-import TabSettings from '../../components/Chat/TabSettings';
+import { useAuth } from '../../../context/AuthContext';
+import Header from '../../../components/Header';
+import AgentList from '../../../components/Chat/AgentList';
+import MiniAgentList from '../../../components/Chat/MiniAgentList';
+import Tabs from '../../../components/Chat/Tabs';
+import TabChat from '../../../components/Chat/TabChat';
+import TabSettings from '../../../components/Chat/TabSettings';
 
 export default function Chat() {
     const { user, logout, fetchUser, refreshToken } = useAuth();

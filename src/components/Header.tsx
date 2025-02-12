@@ -1,5 +1,14 @@
 import Link from 'next/link';
 import UserMenu from './Auth/UserMenu';
+import { JSX } from 'react';
+
+interface HeaderProps {
+    username?: string;
+    onLogout: () => void;
+    onFetchUser: () => void;
+    onRefreshToken: () => void;
+    currentPath: string;
+}
 
 export default function Header({
     username,
@@ -7,7 +16,7 @@ export default function Header({
     onFetchUser,
     onRefreshToken,
     currentPath
-}) {
+}: HeaderProps): JSX.Element {
     return (
         <header className="flex justify-between items-center fixed top-0 left-0 right-0 z-50 bg-gray-800 text-white p-2">
             <h1 className="text-xl md:text-2xl font-bold">✨🦋 梦幻岛</h1>

@@ -1,29 +1,29 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useContext, JSX } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../../context/AuthContext';
+import { AuthContext } from '../../../context/AuthContext';
 
-export default function LoginPage() {
+export default function LoginPage(): JSX.Element {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const { login } = useAuth();
+    const authContext = useContext(AuthContext);
     const router = useRouter();
     const [loading, setLoading] = useState(false);
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setError('');
         setLoading(true);
 
         try {
-            const userData = await login(email, password);
+            const userData: any = await authContext.login(email, password);
             // console.log("user >>> ", userData);
             if (userData) {
                 router.push('/chat');
             }
-        } catch (err) {
+        } catch (err: any) {
             if (err.response && err.response.data && err.response.data.message) {
                 setError(err.response.data.message);
             } else {

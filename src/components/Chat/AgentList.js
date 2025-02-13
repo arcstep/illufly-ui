@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, JSX } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRobot, faHistory } from '@fortawesome/free-solid-svg-icons';
 

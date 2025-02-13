@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, JSX } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext';
 
 export default function LoginPage(): JSX.Element {
@@ -9,7 +8,6 @@ export default function LoginPage(): JSX.Element {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const router = useRouter();
     const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -18,11 +16,7 @@ export default function LoginPage(): JSX.Element {
         setLoading(true);
 
         try {
-            const userData: any = await authContext.login(username, password);
-            console.log("user >>> ", userData);
-            if (userData) {
-                router.push('/chat');
-            }
+            await authContext.login(username, password);
         } catch (err: any) {
             console.log("err >>> ", err);
             if (err.response && err.response.data && err.response.data.message) {

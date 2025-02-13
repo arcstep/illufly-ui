@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, JSX } from 'react';
 
 import { useAuth } from '../../../context/AuthContext';
 import Header from '../../../components/Header';
@@ -10,22 +10,20 @@ import Tabs from '../../../components/Chat/Tabs';
 import TabChat from '../../../components/Chat/TabChat';
 import TabSettings from '../../../components/Chat/TabSettings';
 
-export default function Chat() {
-    const { user, logout, fetchUser, refreshToken } = useAuth();
+export default function Chat(): JSX.Element {
+    const { username, isAuthenticated, logout } = useAuth();
     const [isAgentListVisible, setIsAgentListVisible] = useState(true);
     const [isHistoryListVisible, setIsHistoryListVisible] = useState(false);
     const [agent, setAgent] = useState('fake_llm');
     const [selectedTab, setSelectedTab] = useState('chat');
 
-    if (!user) return null;
+    if (!isAuthenticated) return <div>Loading...</div>;
 
     return (
         <div className="p-5 pt-12 h-screen flex flex-col">
             <Header
-                username={user.username}
+                username={username ?? undefined}
                 onLogout={logout}
-                onFetchUser={fetchUser}
-                onRefreshToken={refreshToken}
                 currentPath="/chat"
             />
             <div className="flex flex-1 flex-col md:flex-row h-full">

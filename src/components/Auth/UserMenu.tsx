@@ -3,11 +3,9 @@ import { useState, useEffect, useRef, JSX } from 'react';
 interface UserMenuProps {
     username?: string;
     onLogout: () => void;
-    onFetchUser: () => void;
-    onRefreshToken: () => void;
 }
 
-export default function UserMenu({ username, onLogout, onFetchUser, onRefreshToken }: UserMenuProps): JSX.Element {
+export default function UserMenu({ username, onLogout }: UserMenuProps): JSX.Element {
     const [isUserMenuVisible, setIsUserMenuVisible] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
@@ -43,18 +41,6 @@ export default function UserMenu({ username, onLogout, onFetchUser, onRefreshTok
                 <div
                     className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded shadow-lg z-50"
                 >
-                    <button
-                        onClick={onFetchUser}
-                        className="w-full text-left px-4 py-2 text-white hover:bg-gray-700"
-                    >
-                        魔法师信息
-                    </button>
-                    <button
-                        onClick={onRefreshToken}
-                        className="w-full text-left px-4 py-2 text-white hover:bg-gray-700"
-                    >
-                        更新魔法令牌
-                    </button>
                     <hr className="border-gray-600" />
                     <button
                         onClick={onLogout}

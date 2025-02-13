@@ -61,12 +61,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const res = await fetch(`${API_BASE_URL}/auth/profile`, { credentials: 'include' })
         if (res.ok) {
             const result = await res.json()
-            console.log(result)
-            setUserId(result.user_id)
-            setDeviceId(result.device_id)
-            setUsername(result.username)
-            setEmail(result.email)
-            setRole(result.role)
+            const token_claims = result.data
+            console.log("GET auth/profile >>> ", token_claims)
+            setUserId(token_claims.user_id)
+            setDeviceId(token_claims.device_id)
+            setUsername(token_claims.username)
+            setEmail(token_claims.email)
+            setRole(token_claims.role)
             setIsAuthenticated(true)
         } else {
             router.push('/login')
@@ -92,15 +93,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         const response = await res.json()
-        setUserId(response.user_id)
-        setDeviceId(response.device_id)
-        setUsername(response.username)
-        setEmail(response.email)
-        setRole(response.role)
+        const token_claims = response.data
+        console.log("POST auth/login >>> ", token_claims)
+        setUserId(token_claims.user_id)
+        setDeviceId(token_claims.device_id)
+        setUsername(token_claims.username)
+        setEmail(token_claims.email)
+        setRole(token_claims.role)
         setIsAuthenticated(true)
 
         // 登录后重定向
-        const from = searchParams.get('from') || '/'
+        const from = searchParams.get('from') || '/chat'
         router.replace(from)
     }
 

@@ -27,8 +27,9 @@ export default function TabChat({ agent, setAgent, isHistoryListVisible }) {
 
     const handleSelectAgent = async (agent) => {
         setAgent(agent);
+        return;
         get_agent_history_list(agent, (historyList) => {
-            change_history(agent, historyList.data.history_id);
+            // change_history(agent, historyList.data.history_id);
 
             if (Array.isArray(historyList.data.history_list)) {
                 setHistoryList(historyList.data.history_list);
@@ -50,7 +51,7 @@ export default function TabChat({ agent, setAgent, isHistoryListVisible }) {
     };
 
     const handleSelectHistory = async (selectedHistoryId) => {
-        change_history(agent, selectedHistoryId);
+        // change_history(agent, selectedHistoryId);
     };
 
     const change_history = async (selectedAgent, selectedHistoryId) => {

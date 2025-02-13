@@ -5,16 +5,12 @@ import { JSX } from 'react';
 interface HeaderProps {
     username?: string;
     onLogout: () => void;
-    onFetchUser: () => void;
-    onRefreshToken: () => void;
     currentPath: string;
 }
 
 export default function Header({
     username,
     onLogout,
-    onFetchUser,
-    onRefreshToken,
     currentPath
 }: HeaderProps): JSX.Element {
     return (
@@ -36,8 +32,6 @@ export default function Header({
                 <UserMenu
                     username={username}
                     onLogout={onLogout}
-                    onFetchUser={onFetchUser}
-                    onRefreshToken={onRefreshToken}
                 />
             </div>
         </header>

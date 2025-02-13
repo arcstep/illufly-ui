@@ -1,6 +1,6 @@
 import Router from 'next/router';
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
 
 export const handleAuthError = (error) => {
     if (error.response && error.response.status === 401) {

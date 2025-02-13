@@ -8,7 +8,7 @@
     "lint": "next lint",
     "build:static": "next build",
     "build:ssr": "next build",
-    "export-to-fastapi": "yarn build:static && node scripts/copy-to-fastapi.js"
+    "copy-to-illufly": "yarn build:static && node scripts/copy-to-illufly.js"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.5.1",

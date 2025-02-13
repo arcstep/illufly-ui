@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useContext, JSX } from 'react';
+import { useState, JSX } from 'react';
 import { useRouter } from 'next/navigation';
-import { AuthContext } from '../../../context/AuthContext';
+import { useAuth } from '../../../context/AuthContext';
 
 export default function LoginPage(): JSX.Element {
-    const [email, setEmail] = useState('');
+    const authContext = useAuth();
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const authContext = useContext(AuthContext);
     const router = useRouter();
     const [loading, setLoading] = useState(false);
 
@@ -18,12 +18,13 @@ export default function LoginPage(): JSX.Element {
         setLoading(true);
 
         try {
-            const userData: any = await authContext.login(email, password);
-            // console.log("user >>> ", userData);
+            const userData: any = await authContext.login(username, password);
+            console.log("user >>> ", userData);
             if (userData) {
                 router.push('/chat');
             }
         } catch (err: any) {
+            console.log("err >>> ", err);
             if (err.response && err.response.data && err.response.data.message) {
                 setError(err.response.data.message);
             } else {
@@ -40,17 +41,17 @@ export default function LoginPage(): JSX.Element {
                 <h1 className="text-3xl sm:text-3xl md:text-4xl lg:text-4xl font-bold mb-6 text-center">✨🦋 欢迎魔法师归来</h1>
                 <form onSubmit={handleSubmit}>
                     <div className="mb-4">
-                        <label htmlFor="email" className="block text-gray-700 mb-2">
-                            邮箱
+                        <label htmlFor="username" className="block text-gray-700 mb-2">
+                            账户
                         </label>
                         <input
-                            type="email"
-                            id="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            type="text"
+                            id="username"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
                             required
                             className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="输入您的邮箱"
+                            placeholder="输入您的账户"
                         />
                     </div>
                     <div className="mb-6">

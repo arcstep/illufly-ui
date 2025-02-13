@@ -1,4 +1,4 @@
-import ProtectedLayout from '@/components/Auth/ProtectedLayout'
+import { AuthProvider } from '../../context/AuthContext'
 
 export default function ChatLayout({
     children
@@ -6,11 +6,11 @@ export default function ChatLayout({
     children: React.ReactNode
 }) {
     return (
-        <ProtectedLayout>
+        <AuthProvider>
             <div className="flex h-screen">
                 <nav>{/* 聊天侧边栏 */}</nav>
                 <main>{children}</main>
             </div>
-        </ProtectedLayout>
+        </AuthProvider>
     )
 }

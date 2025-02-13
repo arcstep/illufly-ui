@@ -1,8 +1,20 @@
 'use client'
 
-import { createContext, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { AuthContextType } from '@/types/auth'
+import { createContext, useState, useContext, useEffect } from 'react'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
+import { API_BASE_URL } from '@/utils/config'
+
+interface AuthContextType {
+    user_id: string | null;
+    username: string | null;
+    email: string | null;
+    role: string | null;
+    isAuthenticated: boolean;
+    device_id: string | null;
+    login: (username: string, password: string) => Promise<void>;
+    logout: () => Promise<void>;
+    refresh_token: () => Promise<void>;
+}
 
 export const AuthContext = createContext<AuthContextType>({
     user_id: null,
@@ -25,6 +37,10 @@ export const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const router = useRouter()
     const searchParams = useSearchParams()
+    const pathname = usePathname()
+
+    // 不需要自动刷新token的路径
+    const noAuthPaths = ['/login', '/register', '/forgot-password']
 
     const [user_id, setUserId] = useState<string | null>(null)
     const [device_id, setDeviceId] = useState<string | null>(null)
@@ -33,9 +49,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [role, setRole] = useState<string | null>(null)
     const [isAuthenticated, setIsAuthenticated] = useState(false)
 
+    useEffect(() => {
+        // 只在非认证页面自动刷新
+        if (!noAuthPaths.includes(pathname)) {
+            refresh_token()
+        }
+    }, [pathname])
+
     // 在任何意见中，自动获取用户信息，然后更新 Context
     const refresh_token = async () => {
-        const res = await fetch('/api/auth/me', { credentials: 'include' })
+        const res = await fetch(`${API_BASE_URL}/auth/profile`, { credentials: 'include' })
         if (res.ok) {
             const result = await res.json()
             console.log(result)
@@ -51,27 +74,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // 登录获得 Context 更新
-    const login = async (email: string, password: string) => {
-        const res = await fetch('/api/auth/login', {
+    const login = async (username: string, password: string) => {
+        console.log("login >>> ", username, password)
+        const res = await fetch(`${API_BASE_URL}/auth/login`, {
             method: 'POST',
             credentials: 'include',
-            body: JSON.stringify({ email, password })
+            headers: {
+                'accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username, password })
         })
 
-        if (!res.ok) throw new Error('Login failed')
+        if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.detail || 'Login failed');
+        }
 
-        const user = await res.json()
-        setUserId(user.user_id)
+        const response = await res.json()
+        setUserId(response.user_id)
+        setDeviceId(response.device_id)
+        setUsername(response.username)
+        setEmail(response.email)
+        setRole(response.role)
         setIsAuthenticated(true)
 
         // 登录后重定向
-        const from = searchParams.get('from') || '/chat'
+        const from = searchParams.get('from') || '/'
         router.replace(from)
     }
 
     // 退出登录
     const logout = async () => {
-        await fetch('/api/auth/logout', {
+        await fetch(`${API_BASE_URL}/auth/logout`, {
             method: 'POST',
             credentials: 'include'
         })
@@ -88,4 +123,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             {children}
         </AuthContext.Provider>
     )
+}
+
+export function useAuth() {
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
 }

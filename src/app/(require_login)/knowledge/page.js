@@ -1,13 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import Header from '../../components/Header';
-import { get_knowledge_list, get_knowledge } from '../../utils/knowledge';
-import KnowledgeCard from '../../components/Knowledge/KnowledgeCard';
+import { useAuth } from '../../../context/AuthContext';
+import { get_knowledge_list, get_knowledge } from '../../../utils/knowledge';
+import KnowledgeCard from '../../../components/Knowledge/KnowledgeCard';
 
 export default function KnowledgePage() {
-    const { user, logout, fetchUser, refreshToken } = useAuth();
+    const { isAuthenticated, changeCurrentPath } = useAuth();
     const [state, setState] = useState({
         knowledgeList: [],
         knowledgeContents: {},
@@ -26,6 +25,7 @@ export default function KnowledgePage() {
     const [pageSize] = useState(10);
 
     useEffect(() => {
+        changeCurrentPath('/knowledge');
         loadKnowledgeList();
     }, [state.pagination.currentPage]);
 
@@ -104,19 +104,10 @@ export default function KnowledgePage() {
         }));
     };
 
-    if (!user) return null;
+    if (!isAuthenticated) return <div>Loading...</div>;
 
     return (
         <div className="p-5 pt-12 h-screen flex flex-col">
-            <Header
-                username={user.username}
-                onLogout={logout}
-                onFetchUser={fetchUser}
-                onRefreshToken={refreshToken}
-                currentPath="/knowledge"
-            />
-
-            {/* 添加标签筛选器 */}
             <div className="px-4 py-2">
                 <TagFilter
                     selectedTags={state.filters.tags}

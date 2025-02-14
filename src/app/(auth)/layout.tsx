@@ -1,6 +1,5 @@
 import { JSX, Suspense } from 'react';
 import { AuthProvider } from '@/context/AuthContext';
-import '../../app/globals.css';
 
 export default function AuthLayout({ children }: { children: JSX.Element }): JSX.Element {
     return (

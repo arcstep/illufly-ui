@@ -1,38 +1,38 @@
-import { createServer, Response } from 'miragejs'
-import { API_BASE_URL } from '@/utils/config'
+import { createServer } from 'miragejs'
+import { authRoutes } from './auth'
+import { chatRoutes } from './chat'
+
+let server: any = null
 
 export function makeServer() {
-    return createServer({
-        routes() {
-            this.post(`${API_BASE_URL}/auth/login`, (_schema, request) => {
-                let attrs = JSON.parse(request.requestBody)
-                const { username, password } = attrs
-                if (username === 'test' && password === 'test123') {
-                    return {
-                        data: {
-                            user_id: 'mock-user-1',
-                            username,
-                            email: `${username}@example.com`,
-                            role: ['user'],
-                            device_id: 'mock-device-1'
-                        }
-                    }
-                } else {
-                    return new Response(401, {}, { detail: '用户名或密码错误' })
-                }
-            })
+    if (server) {
+        server.shutdown()
+    }
 
-            this.get(`${API_BASE_URL}/auth/profile`, () => {
-                return {
-                    data: {
-                        user_id: 'mock-user-1',
-                        username: 'test',
-                        email: 'test@example.com',
-                        role: 'user',
-                        device_id: 'mock-device-1'
-                    }
-                }
-            })
+    server = createServer({
+        routes() {
+            // 设置命名空间
+            this.namespace = ''
+
+            // 注册各模块的路由
+            authRoutes(this)
+            chatRoutes(this)
+
+            // 对未处理的请求放行
+            this.passthrough()
         }
     })
+
+    return server
+}
+
+export function initMirage() {
+    if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_API_MOCKING === 'enabled') {
+        makeServer()
+        console.log('使用 Mirage 模拟 API')
+        return Promise.resolve()
+    } else {
+        console.log('使用 illufly 后台 API')
+        return Promise.resolve()
+    }
 }

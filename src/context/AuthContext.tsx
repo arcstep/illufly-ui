@@ -11,9 +11,11 @@ interface AuthContextType {
     role: string | null;
     isAuthenticated: boolean;
     device_id: string | null;
+    currentPath: string | null;
     login: (username: string, password: string) => Promise<void>;
     logout: () => Promise<void>;
     refresh_token: () => Promise<void>;
+    changeCurrentPath: (path: string) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType>({
@@ -23,6 +25,7 @@ export const AuthContext = createContext<AuthContextType>({
     role: null,
     device_id: null,
     isAuthenticated: false,
+    currentPath: null,
     login: async () => {
         throw new Error('AuthProvider not found')
     },
@@ -31,6 +34,9 @@ export const AuthContext = createContext<AuthContextType>({
     },
     refresh_token: async () => {
         throw new Error('AuthProvider not found')
+    },
+    changeCurrentPath: async () => {
+        throw new Error('AuthProvider not found')
     }
 })
 
@@ -38,6 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const router = useRouter()
     const searchParams = useSearchParams()
     const pathname = usePathname()
+    const [isLoading, setIsLoading] = useState(true)
 
     // 不需要自动刷新token的路径
     const noAuthPaths = ['/login', '/register', '/forgot-password']
@@ -48,29 +55,65 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [email, setEmail] = useState<string | null>(null)
     const [role, setRole] = useState<string | null>(null)
     const [isAuthenticated, setIsAuthenticated] = useState(false)
+    const [currentPath, setCurrentPath] = useState<string | null>(null)
 
     useEffect(() => {
-        // 只在非认证页面自动刷新
         if (!noAuthPaths.includes(pathname)) {
             refresh_token()
+        } else {
+            setIsLoading(false)
         }
     }, [pathname])
 
-    // 在任何意见中，自动获取用户信息，然后更新 Context
     const refresh_token = async () => {
-        const res = await fetch(`${API_BASE_URL}/auth/profile`, { credentials: 'include' })
-        if (res.ok) {
+        const api_url = `${API_BASE_URL}/auth/profile`
+        console.log('api_url >>> ', api_url)
+
+        try {
+            console.log('开始刷新 token')
+            setIsLoading(true)
+
+            const res = await fetch(api_url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                signal: AbortSignal.timeout(5000)
+            })
+
+            console.log('获取到响应:', res.status)
             const result = await res.json()
-            const token_claims = result.data
-            console.log("GET auth/profile >>> ", token_claims)
-            setUserId(token_claims.user_id)
-            setDeviceId(token_claims.device_id)
-            setUsername(token_claims.username)
-            setEmail(token_claims.email)
-            setRole(token_claims.role)
-            setIsAuthenticated(true)
-        } else {
-            router.push('/login')
+            console.log('响应数据:', result)
+
+            if (res.ok) {
+                const token_claims = result.data
+                setUserId(token_claims.user_id)
+                setDeviceId(token_claims.device_id)
+                setUsername(token_claims.username)
+                setEmail(token_claims.email)
+                setRole(token_claims.role)
+                setIsAuthenticated(true)
+            } else {
+                console.log('响应不成功，重定向到登录页')
+                setIsAuthenticated(false)
+                if (typeof window !== 'undefined') {
+                    router.replace('/login')
+                }
+            }
+        } catch (error) {
+            console.error('刷新 token 详细错误:', {
+                error,
+                message: error instanceof Error ? error.message : '未知错误',
+                api_url
+            })
+            setIsAuthenticated(false)
+            if (typeof window !== 'undefined') {
+                router.replace('/login')
+            }
+        } finally {
+            setIsLoading(false)
         }
     }
 
@@ -121,8 +164,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         router.replace('/login')
     }
 
+    const changeCurrentPath = async (path: string) => {
+        await setCurrentPath(path)
+    }
+
+    if (isLoading && !noAuthPaths.includes(pathname)) {
+        return <div>Loading...</div>
+    }
+
     return (
-        <AuthContext.Provider value={{ user_id, device_id, username, email, role, isAuthenticated, login, logout, refresh_token }}>
+        <AuthContext.Provider value={{
+            user_id, device_id, username, email, role, isAuthenticated, currentPath,
+            login, logout, refresh_token, changeCurrentPath
+        }}>
             {children}
         </AuthContext.Provider>
     )

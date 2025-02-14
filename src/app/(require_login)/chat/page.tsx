@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, JSX } from 'react';
+import { useState, useEffect, JSX } from 'react';
 
 import { useAuth } from '../../../context/AuthContext';
-import Header from '../../../components/Header';
 import AgentList from '../../../components/Chat/AgentList';
 import MiniAgentList from '../../../components/Chat/MiniAgentList';
 import Tabs from '../../../components/Chat/Tabs';
@@ -11,72 +10,69 @@ import TabChat from '../../../components/Chat/TabChat';
 import TabSettings from '../../../components/Chat/TabSettings';
 
 export default function Chat(): JSX.Element {
-    const { username, isAuthenticated, logout } = useAuth();
+    const { isAuthenticated, changeCurrentPath } = useAuth();
     const [isAgentListVisible, setIsAgentListVisible] = useState(true);
     const [isHistoryListVisible, setIsHistoryListVisible] = useState(false);
     const [agent, setAgent] = useState('fake_llm');
     const [selectedTab, setSelectedTab] = useState('chat');
 
+    useEffect(() => {
+        changeCurrentPath('/chat');
+    }, []);
+
     if (!isAuthenticated) return <div>Loading...</div>;
 
     return (
-        <div className="p-5 pt-12 h-screen flex flex-col">
-            <Header
-                username={username ?? undefined}
-                onLogout={logout}
-                currentPath="/chat"
-            />
-            <div className="flex flex-1 flex-col md:flex-row h-full">
-                {isAgentListVisible ? (
-                    <AgentList
-                        onChangeAgent={setAgent}
-                        selected_agent={agent}
-                        setIsAgentListVisible={setIsAgentListVisible}
-                        isAgentListVisible={isAgentListVisible}
-                        setIsHistoryListVisible={setIsHistoryListVisible}
-                        isHistoryListVisible={isHistoryListVisible}
-                    />
-                ) : (
-                    <MiniAgentList
-                        agents={[
-                            { id: 'fake_llm', name: '模拟', icon: '🤖' },
-                            { id: 'chat', name: '聊天', icon: '💬' },
-                            { id: 'learn', name: '训练', icon: '🧑‍🎓' }
-                        ]}
-                        onChangeAgent={setAgent}
-                        selected_agent={agent}
-                        toggleAgentList={() => setIsAgentListVisible(!isAgentListVisible)}
-                        toggleHistoryList={() => setIsHistoryListVisible(!isHistoryListVisible)}
-                        isAgentListVisible={isAgentListVisible}
-                        isHistoryListVisible={isHistoryListVisible}
-                    />
-                )}
-                <div className="flex-1 flex flex-col overflow-y-auto h-full">
-                    <Tabs
-                        tabs={[
-                            {
-                                key: 'chat',
-                                label: '对话',
-                                content: (
-                                    <div className="flex-1 overflow-y-auto h-full">
-                                        <TabChat agent={agent} setAgent={setAgent} isHistoryListVisible={isHistoryListVisible} />
-                                    </div>
-                                ),
-                            },
-                            {
-                                key: 'settings',
-                                label: '配置',
-                                content: (
-                                    <div className="flex-1 overflow-y-auto h-full">
-                                        <TabSettings agent={agent} setAgent={setAgent} />
-                                    </div>
-                                ),
-                            }
-                        ]}
-                        selectedTab={selectedTab}
-                        onSelectTab={setSelectedTab}
-                    />
-                </div>
+        <div className="flex flex-1 flex-col md:flex-row h-full">
+            {isAgentListVisible ? (
+                <AgentList
+                    onChangeAgent={setAgent}
+                    selected_agent={agent}
+                    setIsAgentListVisible={setIsAgentListVisible}
+                    isAgentListVisible={isAgentListVisible}
+                    setIsHistoryListVisible={setIsHistoryListVisible}
+                    isHistoryListVisible={isHistoryListVisible}
+                />
+            ) : (
+                <MiniAgentList
+                    agents={[
+                        { id: 'fake_llm', name: '模拟', icon: '🤖' },
+                        { id: 'chat', name: '聊天', icon: '💬' },
+                        { id: 'learn', name: '训练', icon: '🧑‍🎓' }
+                    ]}
+                    onChangeAgent={setAgent}
+                    selected_agent={agent}
+                    toggleAgentList={() => setIsAgentListVisible(!isAgentListVisible)}
+                    toggleHistoryList={() => setIsHistoryListVisible(!isHistoryListVisible)}
+                    isAgentListVisible={isAgentListVisible}
+                    isHistoryListVisible={isHistoryListVisible}
+                />
+            )}
+            <div className="flex-1 flex flex-col overflow-y-auto h-full">
+                <Tabs
+                    tabs={[
+                        {
+                            key: 'chat',
+                            label: '对话',
+                            content: (
+                                <div className="flex-1 overflow-y-auto h-full">
+                                    <TabChat agent={agent} setAgent={setAgent} isHistoryListVisible={isHistoryListVisible} />
+                                </div>
+                            ),
+                        },
+                        {
+                            key: 'settings',
+                            label: '配置',
+                            content: (
+                                <div className="flex-1 overflow-y-auto h-full">
+                                    <TabSettings agent={agent} setAgent={setAgent} />
+                                </div>
+                            ),
+                        }
+                    ]}
+                    selectedTab={selectedTab}
+                    onSelectTab={setSelectedTab}
+                />
             </div>
         </div>
     );

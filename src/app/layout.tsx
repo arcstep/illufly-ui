@@ -1,22 +1,15 @@
 'use client'
-import { useEffect } from 'react'
+import '@/mirage/init'
+import './globals.css'
 
 export default function RootLayout({
-  children,
+    children,
 }: {
-  children: React.ReactNode
+    children: React.ReactNode
 }) {
-  useEffect(() => {
-    if (process.env.NEXT_PUBLIC_API_MOCKING == 'enabled') {
-      import('@/mirage/index').then(({ makeServer }) => {
-        makeServer()
-      })
-    }
-  }, [])
-
-  return (
-    <html lang="zh">
-      <body>{children}</body>
-    </html>
-  )
+    return (
+        <html lang="zh">
+            <body>{children}</body>
+        </html>
+    )
 }

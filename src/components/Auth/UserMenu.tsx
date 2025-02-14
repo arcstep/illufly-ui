@@ -7,13 +7,17 @@ interface UserMenuProps {
 
 export default function UserMenu({ username, onLogout }: UserMenuProps): JSX.Element {
     const [isUserMenuVisible, setIsUserMenuVisible] = useState(false);
+    const [displayName, setDisplayName] = useState('');
     const menuRef = useRef<HTMLDivElement>(null);
 
     // 限制显示的用户名长度
-    let displayName = '未登录';
-    if (username) {
-        displayName = username.length > 10 ? `${username.slice(0, 10)}...` : username;
-    }
+    useEffect(() => {
+        if (username) {
+            setDisplayName(username.length > 10 ? `${username.slice(0, 10)}...` : username);
+        } else {
+            setDisplayName('未登录');
+        }
+    }, [username]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -46,7 +50,7 @@ export default function UserMenu({ username, onLogout }: UserMenuProps): JSX.Ele
                         onClick={onLogout}
                         className="w-full text-left px-4 py-2 text-red-500 hover:bg-gray-700"
                     >
-                        离开梦幻岛
+                        退出
                     </button>
                 </div>
             )}

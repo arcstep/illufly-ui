@@ -165,7 +165,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const changeCurrentPath = async (path: string) => {
-        await setCurrentPath(path)
+        setCurrentPath(path)
     }
 
     if (isLoading && !noAuthPaths.includes(pathname)) {

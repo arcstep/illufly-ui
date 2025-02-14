@@ -15,7 +15,7 @@ export default function Header({
 }: HeaderProps): JSX.Element {
     return (
         <header className="flex justify-between items-center fixed top-0 left-0 right-0 z-50 bg-gray-800 text-white p-2">
-            <h1 className="text-xl md:text-2xl font-bold">✨🦋 梦幻岛</h1>
+            <h1 className="text-xl md:text-2xl font-bold">✨🦋 ILLUFLY</h1>
             <div className="flex space-x-4">
                 {['/chat', '/knowledge', '/favorite', '/share'].map((path) => (
                     <Link href={path} key={path}>

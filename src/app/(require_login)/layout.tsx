@@ -1,8 +1,9 @@
 'use client';
 
 import { Suspense } from 'react'
-import { AuthProvider, useAuth } from '../../context/AuthContext'
-import Header from '../../components/Header'
+import { AuthProvider, useAuth } from '@/context/AuthContext'
+
+import Header from '@/components/Header'
 
 // 创建一个内部组件来使用 Context
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
@@ -28,7 +29,7 @@ export default function ChatLayout({
     children: React.ReactNode
 }) {
     return (
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense fallback={<div>Auth Loading...</div>}>
             <AuthProvider>
                 <AuthenticatedLayout>
                     {children}

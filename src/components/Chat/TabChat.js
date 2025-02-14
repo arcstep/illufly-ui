@@ -9,7 +9,7 @@ import { chat_with_agent, get_agent_history_list, change_agent_history, create_n
 const CHUNK_BLOCK_TYPES = ["text", "chunk", "tool_resp_text", "tool_resp_chunk"];
 const IGNORE_BLOCK_TYPES = [];
 
-export default function TabChat({ agent, setAgent, isHistoryListVisible }) {
+export default function TabChat({ isHistoryListVisible }) {
     const [historyList, setHistoryList] = useState([]);
     const [historyId, setHistoryId] = useState('');
     const [messages, setMessages] = useState([]);
@@ -18,32 +18,11 @@ export default function TabChat({ agent, setAgent, isHistoryListVisible }) {
     const updateTimer = useRef(null);
 
     useEffect(() => {
-        handleSelectAgent(agent);
-    }, [agent]);
-
-    useEffect(() => {
         messagesRef.current = messages;
     }, [messages]);
 
-    const handleSelectAgent = async (agent) => {
-        setAgent(agent);
-        return;
-        get_agent_history_list(agent, (historyList) => {
-            // change_history(agent, historyList.data.history_id);
-
-            if (Array.isArray(historyList.data.history_list)) {
-                setHistoryList(historyList.data.history_list);
-            } else {
-                console.error("获取的历史记录列表不是数组:", historyList.data);
-                setHistoryList([]);
-            }
-        }, (error) => {
-            console.log('获取历史记录列表失败:', error);
-        });
-    };
-
     const handleNewHistory = async () => {
-        await create_new_agent_history(agent, (newHistoryId) => {
+        await create_new_agent_history((newHistoryId) => {
             setHistoryList((lastHistoryList) => [newHistoryId.data, ...lastHistoryList]);
             setHistoryId(newHistoryId.data);
             setMessages([]);
@@ -51,7 +30,7 @@ export default function TabChat({ agent, setAgent, isHistoryListVisible }) {
     };
 
     const handleSelectHistory = async (selectedHistoryId) => {
-        // change_history(agent, selectedHistoryId);
+        change_history(selectedHistoryId);
     };
 
     const change_history = async (selectedAgent, selectedHistoryId) => {

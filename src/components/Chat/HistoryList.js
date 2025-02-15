@@ -4,7 +4,7 @@ import { useChat } from '@/context/ChatContext'
 import { useEffect, useState } from 'react'
 
 export default function HistoryList() {
-    const { history, loadThreadMessages, loadAllThreads } = useChat()
+    const { history, loadAllThreads, switchThread } = useChat()
     const [loading, setLoading] = useState(false)
     const [threads, setThreads] = useState([])
 
@@ -38,7 +38,7 @@ export default function HistoryList() {
                 threads.map(({ thread_id, title, last_message }) => (
                     <button
                         key={thread_id}
-                        onClick={() => loadThreadMessages(thread_id)}
+                        onClick={() => switchThread(thread_id)}
                         className="w-full p-2 text-left hover:bg-gray-100"
                     >
                         <div className="font-medium">{title}</div>

@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPaperclip, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { useChat } from '@/context/ChatContext';
 
-export default function MessageInput({ onSendMessage }) {
+export default function MessageInput() {
+    const { ask } = useChat();
     const [text, setText] = useState('');
     const [selectedFiles, setSelectedFiles] = useState([]);
 
@@ -10,7 +12,7 @@ export default function MessageInput({ onSendMessage }) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             if (text.trim()) {
-                onSendMessage(text);
+                ask(text);
                 setText(''); // 清空输入框
                 e.target.style.height = 'auto'; // 重置高度
             }

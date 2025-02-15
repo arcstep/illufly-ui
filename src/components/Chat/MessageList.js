@@ -4,11 +4,26 @@ import { faCheck, faStar, faThumbsUp, faThumbsDown, faCopy } from '@fortawesome/
 import MarkdownRenderer from '../Knowledge/MarkdownRenderer';
 import RAGCard from '../RAG/RAGCard';
 import CopyButton from '../Common/CopyButton';
+import { useChat } from '@/context/ChatContext';
 
-export default function MessageList({ messages }) {
+export default function MessageList() {
+    const { currentThreadId, loadThreadMessages, lastChunksContent } = useChat()
     const messagesEndRef = useRef(null);
     const [selectedMessageIds, setSelectedMessageIds] = useState([]);
     const [attitude, setAttitude] = useState({});
+    const [messages, setMessages] = useState([])
+
+    useEffect(() => {
+        const fetchMessages = async () => {
+            console.log('currentThreadId: ', currentThreadId)
+            if (currentThreadId) {
+                const messages = await loadThreadMessages(currentThreadId)
+                console.log('加载消息数据', messages)
+                setMessages(messages)
+            }
+        }
+        fetchMessages()
+    }, [currentThreadId])
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -46,86 +61,50 @@ export default function MessageList({ messages }) {
     return (
         <div className="h-full flex flex-col bg-gray-50">
             <div className="flex-1 overflow-y-auto p-4">
-                <ul>
+                <ul className="space-y-4">
                     {messages.map((message) => (
                         <li
-                            key={message.id}
-                            className={`flex items-start relative group mb-4 p-4 rounded-lg shadow-sm bg-white 
-                                ${selectedMessageIds.includes(message.id) ? 'border-2 border-blue-500' : 'border border-gray-200'}`}
+                            key={message.message_id}
+                            className={`flex gap-3 group relative p-4 rounded-lg shadow-sm bg-white 
+                                ${selectedMessageIds.includes(message.message_id) ? 'border-2 border-blue-500' : 'border border-gray-200'}`}
                         >
-                            <div className="flex flex-col items-center mr-4">
-                                {message.logo}
-                                <div
-                                    className={`mt-2 flex flex-col items-center 
-                                        ${selectedMessageIds.includes(message.id) ||
-                                            attitude[message.id]?.star ||
-                                            attitude[message.id]?.like ||
-                                            attitude[message.id]?.dislike
-                                            ? 'opacity-100'
-                                            : 'opacity-0 group-hover:opacity-100'
-                                        } transition-opacity duration-300`}
+                            <div className="w-8 flex-shrink-0">
+                                <button
+                                    className={`cursor-pointer w-6 h-6 rounded-full flex items-center justify-center 
+                                        ${selectedMessageIds.includes(message.message_id)
+                                            ? 'bg-blue-500 text-white'
+                                            : 'bg-gray-200 text-gray-400 opacity-0 group-hover:opacity-100'} 
+                                        transition-opacity duration-200`}
+                                    onClick={() => handleSelectMessage(message.message_id)}
+                                    title="选择消息"
                                 >
-                                    <button
-                                        className={`cursor-pointer w-6 h-6 rounded-full mb-2 flex items-center justify-center 
-                                            ${selectedMessageIds.includes(message.id) ? 'bg-blue-500 text-white' : 'bg-gray-300 text-gray-500'}`}
-                                        onClick={() => handleSelectMessage(message.id)}
-                                        title="点击选择/取消选择"
-                                    >
-                                        <FontAwesomeIcon icon={faCheck} />
-                                    </button>
-                                    <button
-                                        className={`cursor-pointer w-6 h-6 rounded-full mb-2 flex items-center justify-center 
-                                            ${attitude[message.id]?.star ? 'bg-yellow-500 text-white' : 'bg-gray-300 text-gray-500'}`}
-                                        onClick={() => handleAttitudeChange(message.id, 'star')}
-                                        title="收藏"
-                                    >
-                                        <FontAwesomeIcon icon={faStar} />
-                                    </button>
-                                    {message.name !== '你' && (
-                                        <>
-                                            <button
-                                                className={`cursor-pointer w-6 h-6 rounded-full mb-2 flex items-center justify-center 
-                                                    ${attitude[message.id]?.like ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-500'}`}
-                                                onClick={() => handleAttitudeChange(message.id, 'like')}
-                                                title="点赞"
-                                            >
-                                                <FontAwesomeIcon icon={faThumbsUp} />
-                                            </button>
-                                            <button
-                                                className={`cursor-pointer w-6 h-6 rounded-full flex items-center justify-center 
-                                                    ${attitude[message.id]?.dislike ? 'bg-red-500 text-white' : 'bg-gray-300 text-gray-500'}`}
-                                                onClick={() => handleAttitudeChange(message.id, 'dislike')}
-                                                title="踩"
-                                            >
-                                                <FontAwesomeIcon icon={faThumbsDown} />
-                                            </button>
-                                        </>
-                                    )}
-                                </div>
+                                    <FontAwesomeIcon icon={faCheck} className="text-sm" />
+                                </button>
                             </div>
-                            <div className="flex-1">
-                                <div className="font-semibold text-gray-800">{message.name}</div>
-                                {message.segments.map((segment, index) => (
-                                    <div key={index} className="bg-white p-2 mb-2 rounded">
-                                        <div className="flex items-center text-xs text-gray-500 mb-1">
-                                            <span className="inline-block bg-blue-100 text-blue-800 rounded-full px-2 py-0.5">
-                                                {segment.type.toUpperCase()}
-                                            </span>
-                                            {['human', 'chunk'].includes(segment.type) && (
-                                                <CopyButton content={segment.content} />
-                                            )}
-                                            <span className="text-gray-400 ml-auto">{message.timestamp}</span>
-                                        </div>
-                                        {segment.type === 'rag' ? (
-                                            <RAGCard content={segment.content} />
-                                        ) : (
-                                            <MarkdownRenderer
-                                                content={segment.content}
-                                                className="text-sm text-gray-700 prose prose-sm max-w-none"
-                                            />
-                                        )}
-                                    </div>
-                                ))}
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="font-medium text-gray-700">
+                                        {message.role === 'assistant' ? 'AI' : '用户'}
+                                    </span>
+                                    <span className="inline-block bg-blue-100 text-blue-800 text-xs rounded-full px-2 py-0.5">
+                                        {message.message_type.toUpperCase()}
+                                    </span>
+                                    {message.favorite && (
+                                        <span className="text-yellow-500">
+                                            <FontAwesomeIcon icon={faStar} className="text-sm" />
+                                        </span>
+                                    )}
+                                    <CopyButton content={message.content} />
+                                    <span className="text-xs text-gray-400 ml-auto">
+                                        {message.created_at}
+                                    </span>
+                                </div>
+                                <div className="text-gray-800">
+                                    <MarkdownRenderer
+                                        content={message.content}
+                                        className="prose prose-sm max-w-none"
+                                    />
+                                </div>
                             </div>
                         </li>
                     ))}
@@ -133,18 +112,18 @@ export default function MessageList({ messages }) {
                 </ul>
             </div>
             {selectedMessageIds.length > 0 && (
-                <div className="sticky bottom-0 bg-white p-2 shadow-md flex justify-between">
+                <div className="sticky bottom-0 bg-white p-3 shadow-md flex justify-end gap-4">
                     <button
-                        className="text-blue-500"
+                        className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700"
                         onClick={handleShareMessages}
                     >
-                        分享选中的消息
+                        分享选中消息
                     </button>
                     <button
-                        className="text-red-500"
+                        className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-700"
                         onClick={handleCancelShare}
                     >
-                        取消分享
+                        取消选择
                     </button>
                 </div>
             )}

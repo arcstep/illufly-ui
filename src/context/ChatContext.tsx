@@ -11,6 +11,7 @@ export interface Message {
     favorite: string | null
     role: 'user' | 'assistant'
     content: string
+    created_at: string
 }
 
 // 线程
@@ -39,6 +40,9 @@ interface ChatContextType {
     // 加载所有历史线程清单
     loadAllThreads: () => Promise<void>
 
+    // 切换当前线程
+    switchThread: (threadId: string) => Promise<void>
+
     // 加载特定线程的消息
     loadThreadMessages: (threadId: string) => Promise<void>
 
@@ -58,7 +62,8 @@ const ChatContext = createContext<ChatContextType>({
     loadAllThreads: async () => { throw new Error('ChatProvider not found') },
     loadThreadMessages: async () => { throw new Error('ChatProvider not found') },
     ask: async () => { throw new Error('ChatProvider not found') },
-    toggleFavorite: async () => { throw new Error('ChatProvider not found') }
+    toggleFavorite: async () => { throw new Error('ChatProvider not found') },
+    switchThread: async () => { throw new Error('ChatProvider not found') }
 })
 
 // Provider 组件
@@ -80,6 +85,13 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         return newThreadId
     }
 
+    const switchThread = async (threadId: string) => {
+        const allThreads = Object.keys(history)
+        if (allThreads.includes(threadId)) {
+            setCurrentThreadId(threadId)
+        }
+    }
+
     // 加载历史对话列表
     const loadAllThreads = async () => {
         try {
@@ -97,11 +109,23 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
     // 加载特定对话的消息
     const loadThreadMessages = async (threadId: string) => {
-        const res = await fetch(`${API_BASE_URL}/chat/threads/${threadId}/messages`, {
-            credentials: 'include'
-        })
-        const data = await res.json()
-        setHistory({ ...history, [threadId]: { ...history[threadId], chat: data.messages } })
+        const allThreads = Object.keys(history)
+        if (allThreads.includes(threadId)) {
+            const thread = history[threadId]
+            if (thread.loaded) {
+                console.log('线程已加载，直接返回')
+                return thread.chat
+            } else {
+                const res = await fetch(`${API_BASE_URL}/chat/threads/${threadId}/messages`, {
+                    credentials: 'include'
+                })
+                const messages = await res.json()
+                console.log('加载远程对话消息数据', messages)
+                await setHistory({ ...history, [threadId]: { ...thread, loaded: true, chat: messages } })
+                return messages
+            }
+        }
+        return []
     }
 
     // 发送新消息
@@ -139,6 +163,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
             history,
             lastChunksContent,
             createNewThread,
+            switchThread,
             loadAllThreads,
             loadThreadMessages,
             ask,

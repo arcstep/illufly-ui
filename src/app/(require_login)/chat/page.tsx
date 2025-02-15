@@ -6,14 +6,12 @@ import { useAuth } from '@/context/AuthContext';
 import HistoryList from '@/components/Chat/HistoryList';
 import MessageList from '@/components/Chat/MessageList';
 import MessageInput from '@/components/Chat/MessageInput';
-import { useChat, ChatProvider } from '@/context/ChatContext';
+import { ChatProvider } from '@/context/ChatContext';
 
 function Chat(): JSX.Element {
     const { isAuthenticated, changeCurrentPath } = useAuth();
-    const { currentThreadId, history, ask } = useChat();
     const [isHistoryListVisible] = useState(true);
 
-    const currentMessages = currentThreadId ? history[currentThreadId]?.chat || [] : [];
 
     useEffect(() => {
         changeCurrentPath('/chat');
@@ -32,9 +30,9 @@ function Chat(): JSX.Element {
             )}
             <div className="flex-1 flex flex-col h-full">
                 <div className="flex-1 overflow-y-auto p-4 h-full">
-                    <MessageList messages={currentMessages} />
+                    <MessageList />
                 </div>
-                <MessageInput onSendMessage={ask} />
+                <MessageInput />
             </div>
         </div>
 

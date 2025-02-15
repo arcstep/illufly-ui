@@ -2,25 +2,21 @@ import { Server, Response } from 'miragejs'
 import { API_BASE_URL } from '@/utils/config'
 import { Message } from '@/context/ChatContext'
 
-const mockThreads: Object[] = [
-    { "thread_id": "thread-1", "title": "关于 AI 的讨论", "created_at": "2024-01-01T00:00:00Z" },
-    { "thread_id": "thread-2", "title": "你是什么模型？", "created_at": "2024-01-01T00:00:00Z" },
-]
-
 const mockNewThread: Object = {
     thread_id: 'thread-1',
     title: '',
     created_at: '2024-01-01T00:00:00Z'
 }
 
-const mockMessages1: Message[] = [
+const mockMessages: Message[] = [
     {
         request_id: 'req1',
         message_id: 'msg-1',
         favorite: null,
         role: 'user',
         content: '什么是 AI？',
-        message_type: 'text'
+        message_type: 'text',
+        created_at: '2024-01-01T00:00:00Z'
     },
     {
         request_id: 'req2',
@@ -28,7 +24,8 @@ const mockMessages1: Message[] = [
         favorite: null,
         role: 'assistant',
         content: 'AI 是...',
-        message_type: 'text'
+        message_type: 'text',
+        created_at: '2024-01-01T00:00:00Z'
     },
     {
         request_id: 'req3',
@@ -36,8 +33,18 @@ const mockMessages1: Message[] = [
         favorite: null,
         role: 'user',
         content: '什么是 AI？',
-        message_type: 'text'
-    }
+        message_type: 'text',
+        created_at: '2024-01-01T00:00:00Z'
+    },
+    {
+        request_id: 'req4',
+        message_id: 'msg-4',
+        favorite: null,
+        role: 'assistant',
+        content: 'AI 是...',
+        message_type: 'text',
+        created_at: '2024-01-01T00:00:00Z'
+    },
 ]
 
 const mockHistory: Object = {
@@ -68,8 +75,11 @@ export function chatRoutes(server: Server) {
     server.get(`${API_BASE_URL}/chat/threads/:threadId/messages`, (_schema, request) => {
         const { threadId } = request.params
         if (threadId in mockHistory) {
-            const messages = mockHistory[threadId as keyof typeof mockHistory]
-            return messages
+            if (threadId === 'thread-1') {
+                return mockMessages
+            } else {
+                return mockMessages.slice(0, 2)
+            }
         } else {
             return new Response(404, {}, { error: 'Thread not found' })
         }
@@ -112,7 +122,8 @@ export function chatRoutes(server: Server) {
                         favorite: null,
                         role: 'assistant',
                         content: chunks[chunkIndex],
-                        message_type: 'text_chunk'
+                        message_type: 'text_chunk',
+                        created_at: '2024-01-01T00:00:00Z'
                     }
 
                     sink.send(`data: ${JSON.stringify(chunk)}\n\n`)

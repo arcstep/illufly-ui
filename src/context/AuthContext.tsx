@@ -84,11 +84,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             })
 
             console.log('获取到响应:', res.status)
-            const result = await res.json()
-            console.log('响应数据:', result)
-
             if (res.ok) {
-                const token_claims = result.data
+                const token_claims = await res.json()
                 setUserId(token_claims.user_id)
                 setDeviceId(token_claims.device_id)
                 setUsername(token_claims.username)
@@ -135,8 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             throw new Error(errorData.detail || 'Login failed');
         }
 
-        const response = await res.json()
-        const token_claims = response.data
+        const token_claims = await res.json()
         console.log("POST auth/login >>> ", token_claims)
         setUserId(token_claims.user_id)
         setDeviceId(token_claims.device_id)

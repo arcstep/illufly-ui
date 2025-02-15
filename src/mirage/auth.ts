@@ -7,13 +7,11 @@ export function authRoutes(server: Server) {
         const { username, password } = attrs
         if (username === 'test' && password === 'test123') {
             return {
-                data: {
-                    user_id: 'mock-user-1',
-                    username,
-                    email: `test@example.com`,
-                    role: ['user'],
-                    device_id: 'mock-device-1'
-                }
+                user_id: 'mock-user-1',
+                username,
+                email: `test@example.com`,
+                role: ['user'],
+                device_id: 'mock-device-1'
             }
         } else {
             return new Response(401, {}, { detail: '用户名或密码错误' })
@@ -22,13 +20,17 @@ export function authRoutes(server: Server) {
 
     server.get(`${API_BASE_URL}/auth/profile`, () => {
         return {
-            data: {
-                user_id: 'mock-user-1',
-                username: 'test',
-                email: 'test@example.com',
-                role: ['user'],
-                device_id: 'mock-device-1'
-            }
+            user_id: 'mock-user-1',
+            username: 'test',
+            email: 'test@example.com',
+            role: ['user'],
+            device_id: 'mock-device-1'
+        }
+    })
+
+    server.post(`${API_BASE_URL}/auth/logout`, () => {
+        return {
+            message: '退出成功'
         }
     })
 }

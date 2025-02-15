@@ -3,60 +3,69 @@
 import { createContext, useState, useContext } from 'react'
 import { API_BASE_URL } from '@/utils/config'
 
-// 定义类型
-interface Message {
+// 基础消息类型
+export interface Message {
+    request_id: string
+    message_id: string
+    message_type: 'text' | 'image' | 'audio' | 'video' | 'file' | 'text_chunk'
+    favorite: string | null
     role: 'user' | 'assistant'
     content: string
 }
 
-interface ChatMessage {
-    request_id: string
-    favorite: boolean
-    request: Message[]
-    reply: Message[]
-}
-
-interface Thread {
+// 线程
+export interface Thread {
     thread_id: string
     title: string
-    last_message: string
     created_at: string
-    updated_at: string
+    loaded: boolean | false
+    chat: Message[]
 }
 
 interface ChatContextType {
     // 当前线程状态
     currentThreadId: string | null
-    currentMessages: ChatMessage[]
 
-    // 历史线程列表
-    threads: Thread[]
+    // 对话历史
+    history: { [thread_id: string]: Thread }
 
-    // 操作方法
+    // 当前线程的最后一条消息
+    // 临时保存流消息，与 history 中的消息合并组成完整的对话
+    lastChunksContent: string | ""
+
+    // 创建新对话
     createNewThread: () => Promise<string>
-    loadThreadHistory: () => Promise<void>
+
+    // 加载所有历史线程清单
+    loadAllThreads: () => Promise<void>
+
+    // 加载特定线程的消息
     loadThreadMessages: (threadId: string) => Promise<void>
-    sendMessage: (content: string) => Promise<void>
+
+    // 发送新消息
+    ask: (content: string) => Promise<void>
+
+    // 切换收藏状态
     toggleFavorite: (requestId: string) => Promise<void>
 }
 
 // 创建 Context
 const ChatContext = createContext<ChatContextType>({
     currentThreadId: null,
-    currentMessages: [],
-    threads: [],
+    history: {},
+    lastChunksContent: "",
     createNewThread: async () => { throw new Error('ChatProvider not found') },
-    loadThreadHistory: async () => { throw new Error('ChatProvider not found') },
+    loadAllThreads: async () => { throw new Error('ChatProvider not found') },
     loadThreadMessages: async () => { throw new Error('ChatProvider not found') },
-    sendMessage: async () => { throw new Error('ChatProvider not found') },
+    ask: async () => { throw new Error('ChatProvider not found') },
     toggleFavorite: async () => { throw new Error('ChatProvider not found') }
 })
 
 // Provider 组件
 export function ChatProvider({ children }: { children: React.ReactNode }) {
     const [currentThreadId, setCurrentThreadId] = useState<string | null>(null)
-    const [currentMessages, setCurrentMessages] = useState<ChatMessage[]>([])
-    const [threads, setThreads] = useState<Thread[]>([])
+    const [history, setHistory] = useState<{ [thread_id: string]: Thread }>({})
+    const [lastChunksContent, setLastChunksContent] = useState<string | "">("")
 
     // 创建新对话
     const createNewThread = async () => {
@@ -65,19 +74,19 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
             credentials: 'include'
         })
         const data = await res.json()
-        const newThreadId = data.thread_id
+        const newThreadId = data
         setCurrentThreadId(newThreadId)
-        setCurrentMessages([])
+        setHistory({ ...history, [newThreadId]: { ...history[newThreadId], loaded: false, chat: [] } })
         return newThreadId
     }
 
     // 加载历史对话列表
-    const loadThreadHistory = async () => {
+    const loadAllThreads = async () => {
         const res = await fetch(`${API_BASE_URL}/chat/threads`, {
             credentials: 'include'
         })
         const data = await res.json()
-        setThreads(data.threads)
+        setHistory(data.threads)
     }
 
     // 加载特定对话的消息
@@ -86,12 +95,11 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
             credentials: 'include'
         })
         const data = await res.json()
-        setCurrentThreadId(threadId)
-        setCurrentMessages(data.messages)
+        setHistory({ ...history, [threadId]: { ...history[threadId], chat: data.messages } })
     }
 
     // 发送新消息
-    const sendMessage = async (content: string) => {
+    const ask = async (content: string) => {
         if (!currentThreadId) return
 
         const res = await fetch(`${API_BASE_URL}/chat/threads/${currentThreadId}/messages`, {
@@ -104,9 +112,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
                 messages: [{ role: 'user', content }]
             })
         })
-
         const data = await res.json()
-        setCurrentMessages([...currentMessages, data.message])
+        setLastChunksContent(data.message.content)
     }
 
     // 切换收藏状态
@@ -117,23 +124,18 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         })
 
         if (res.ok) {
-            setCurrentMessages(currentMessages.map(msg =>
-                msg.request_id === requestId
-                    ? { ...msg, favorite: !msg.favorite }
-                    : msg
-            ))
         }
     }
 
     return (
         <ChatContext.Provider value={{
             currentThreadId,
-            currentMessages,
-            threads,
+            history,
+            lastChunksContent,
             createNewThread,
-            loadThreadHistory,
+            loadAllThreads,
             loadThreadMessages,
-            sendMessage,
+            ask,
             toggleFavorite
         }}>
             {children}

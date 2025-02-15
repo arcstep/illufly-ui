@@ -10,8 +10,10 @@ import { useChat, ChatProvider } from '@/context/ChatContext';
 
 function Chat(): JSX.Element {
     const { isAuthenticated, changeCurrentPath } = useAuth();
-    const { currentMessages, sendMessage } = useChat();
+    const { currentThreadId, history, ask } = useChat();
     const [isHistoryListVisible] = useState(true);
+
+    const currentMessages = currentThreadId ? history[currentThreadId]?.chat || [] : [];
 
     useEffect(() => {
         changeCurrentPath('/chat');
@@ -32,7 +34,7 @@ function Chat(): JSX.Element {
                 <div className="flex-1 overflow-y-auto p-4 h-full">
                     <MessageList messages={currentMessages} />
                 </div>
-                <MessageInput onSendMessage={sendMessage} />
+                <MessageInput onSendMessage={ask} />
             </div>
         </div>
 

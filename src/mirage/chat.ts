@@ -40,36 +40,28 @@ const mockMessages1: Message[] = [
     }
 ]
 
-const mockThread1: Object = {
-    ...mockThreads[0],
-    loaded: true,
-    chat: mockMessages1
-}
-
-const mockThread2: Object = {
-    ...mockThreads[0],
-    loaded: true,
-    chat: mockMessages1
-}
-
 const mockHistory: Object = {
-    "thread-1": mockThread1,
-    "thread-2": mockThread2,
+    "thread-1": {
+        thread_id: "thread-1",
+        title: "关于 AI 的讨论",
+        created_at: "2024-01-01T00:00:00Z"
+    },
+    "thread-2": {
+        thread_id: "thread-2",
+        title: "你是什么模型？",
+        created_at: "2024-01-01T00:00:00Z"
+    }
 }
 
 export function chatRoutes(server: Server) {
     // 创建新对话
     server.post(`${API_BASE_URL}/chat/threads`, () => {
-        return {
-            data: mockNewThread
-        }
+        return mockNewThread
     })
 
     // 获取对话列表
     server.get(`${API_BASE_URL}/chat/threads`, () => {
-        return {
-            data: mockHistory
-        }
+        return mockHistory
     })
 
     // 获取特定对话的消息
@@ -77,9 +69,7 @@ export function chatRoutes(server: Server) {
         const { threadId } = request.params
         if (threadId in mockHistory) {
             const messages = mockHistory[threadId as keyof typeof mockHistory]
-            return {
-                data: messages
-            }
+            return messages
         } else {
             return new Response(404, {}, { error: 'Thread not found' })
         }

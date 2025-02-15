@@ -82,11 +82,17 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
     // 加载历史对话列表
     const loadAllThreads = async () => {
-        const res = await fetch(`${API_BASE_URL}/chat/threads`, {
-            credentials: 'include'
-        })
-        const data = await res.json()
-        setHistory(data.threads)
+        try {
+            const res = await fetch(`${API_BASE_URL}/chat/threads`, {
+                credentials: 'include'
+            })
+            const threads = await res.json()
+            console.log('收到的线程数据:', threads)
+            setHistory(threads)
+        } catch (error) {
+            console.error('加载线程失败:', error)
+            throw error
+        }
     }
 
     // 加载特定对话的消息

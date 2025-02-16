@@ -50,6 +50,12 @@
       ],
       "@styles/*": [
         "src/styles/*"
+      ],
+      "msw": [
+        "node_modules/msw"
+      ],
+      "msw/node": [
+        "node_modules/msw/node"
       ]
     },
     "plugins": [

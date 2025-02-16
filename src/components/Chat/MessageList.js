@@ -7,25 +7,20 @@ import CopyButton from '../Common/CopyButton';
 import { useChat } from '@/context/ChatContext';
 
 export default function MessageList() {
-    const { currentThreadId, loadThreadMessages, lastChunksContent } = useChat()
+    const { threads, switchThread, currentThreadId, messages } = useChat()
     const messagesEndRef = useRef(null);
     const [selectedMessageIds, setSelectedMessageIds] = useState([]);
     const [attitude, setAttitude] = useState({});
-    const [messages, setMessages] = useState([])
 
     useEffect(() => {
-        const fetchMessages = async () => {
-            console.log('currentThreadId: ', currentThreadId)
-            if (currentThreadId) {
-                const messages = await loadThreadMessages(currentThreadId)
-                console.log('加载消息数据', messages)
-                setMessages(messages)
-            }
+        const lastThread = threads.sort((a, b) => b.created_at - a.created_at)[0]
+        if (lastThread) {
+            switchThread(lastThread.thread_id)
         }
-        fetchMessages()
-    }, [currentThreadId])
+    }, [threads])
 
     useEffect(() => {
+        console.log('messages: ', messages)
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
@@ -84,7 +79,7 @@ export default function MessageList() {
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-2">
                                     <span className="font-medium text-gray-700">
-                                        {message.role === 'assistant' ? 'AI' : '用户'}
+                                        {message.role}
                                     </span>
                                     <span className="inline-block bg-blue-100 text-blue-800 text-xs rounded-full px-2 py-0.5">
                                         {message.message_type.toUpperCase()}
@@ -96,7 +91,7 @@ export default function MessageList() {
                                     )}
                                     <CopyButton content={message.content} />
                                     <span className="text-xs text-gray-400 ml-auto">
-                                        {message.created_at}
+                                        {new Date(message.completed_at).toLocaleString()}
                                     </span>
                                 </div>
                                 <div className="text-gray-800">

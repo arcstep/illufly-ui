@@ -4,23 +4,16 @@ import { useChat } from '@/context/ChatContext'
 import { useEffect, useState } from 'react'
 
 export default function HistoryList() {
-    const { history, loadAllThreads, switchThread } = useChat()
+    const { threads, loadAllThreads, switchThread } = useChat()
     const [loading, setLoading] = useState(false)
-    const [threads, setThreads] = useState([])
-
-    useEffect(() => {
-        if (history) {
-            setThreads(Object.values(history))
-            console.log("更新 history: ", history)
-        }
-    }, [history])
 
     useEffect(() => {
         const fetchThreads = async () => {
             setLoading(true)
             try {
                 await loadAllThreads()
-                console.log("更新 history: ", history)
+
+                console.log("更新 threads: ", threads)
             } catch (error) {
                 console.error('加载历史记录失败:', error)
             } finally {
@@ -35,14 +28,13 @@ export default function HistoryList() {
             {loading ? (
                 <div>加载中...</div>
             ) : (
-                threads.map(({ thread_id, title, last_message }) => (
+                threads.map(({ thread_id, title }) => (
                     <button
                         key={thread_id}
                         onClick={() => switchThread(thread_id)}
                         className="w-full p-2 text-left hover:bg-gray-100"
                     >
                         <div className="font-medium">{title}</div>
-                        <div className="text-sm text-gray-500">{last_message}</div>
                     </button>
                 ))
             )}

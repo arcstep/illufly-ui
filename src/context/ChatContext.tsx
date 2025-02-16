@@ -1,26 +1,26 @@
 'use client'
 
-import { createContext, useState, useContext } from 'react'
+import { createContext, useState, useContext, useMemo } from 'react'
 import { API_BASE_URL } from '@/utils/config'
+import { fetchEventSource } from '@microsoft/fetch-event-source'
 
 // 基础消息类型
 export interface Message {
     request_id: string
     message_id: string
-    message_type: 'text' | 'image' | 'audio' | 'video' | 'file' | 'text_chunk'
+    message_type: 'text' | 'image' | 'audio' | 'video' | 'file' | 'text_chunk' | 'end'
     favorite: string | null
     role: 'user' | 'assistant'
     content: string
-    created_at: string
+    created_at: number
+    completed_at: number
 }
 
 // 线程
 export interface Thread {
     thread_id: string
     title: string
-    created_at: string
-    loaded: boolean | false
-    chat: Message[]
+    created_at: number
 }
 
 interface ChatContextType {
@@ -28,11 +28,11 @@ interface ChatContextType {
     currentThreadId: string | null
 
     // 对话历史
-    history: { [thread_id: string]: Thread }
+    threads: Thread[]
 
-    // 当前线程的最后一条消息
     // 临时保存流消息，与 history 中的消息合并组成完整的对话
-    lastChunksContent: string | ""
+    lastChunks: Message[]
+    messages: Message[]
 
     // 创建新对话
     createNewThread: () => Promise<string>
@@ -42,9 +42,6 @@ interface ChatContextType {
 
     // 切换当前线程
     switchThread: (threadId: string) => Promise<void>
-
-    // 加载特定线程的消息
-    loadThreadMessages: (threadId: string) => Promise<void>
 
     // 发送新消息
     ask: (content: string) => Promise<void>
@@ -56,21 +53,65 @@ interface ChatContextType {
 // 创建 Context
 const ChatContext = createContext<ChatContextType>({
     currentThreadId: null,
-    history: {},
-    lastChunksContent: "",
+    threads: [],
+    lastChunks: [],
+    messages: [],
     createNewThread: async () => { throw new Error('ChatProvider not found') },
     loadAllThreads: async () => { throw new Error('ChatProvider not found') },
-    loadThreadMessages: async () => { throw new Error('ChatProvider not found') },
     ask: async () => { throw new Error('ChatProvider not found') },
     toggleFavorite: async () => { throw new Error('ChatProvider not found') },
-    switchThread: async () => { throw new Error('ChatProvider not found') }
+    switchThread: async () => { throw new Error('ChatProvider not found') },
 })
 
 // Provider 组件
 export function ChatProvider({ children }: { children: React.ReactNode }) {
     const [currentThreadId, setCurrentThreadId] = useState<string | null>(null)
-    const [history, setHistory] = useState<{ [thread_id: string]: Thread }>({})
-    const [lastChunksContent, setLastChunksContent] = useState<string | "">("")
+    const [threads, setThreads] = useState<Thread[]>([])
+    const [lastChunks, setLastChunks] = useState<Message[]>([])
+    const [archivedMessages, setArchivedMessages] = useState<Message[]>([])
+
+    // 合并chunks的工具函数
+    const mergeChunks = (chunks: Message[]): Message[] => {
+        const messageGroups = new Map<string, Message[]>()
+
+        // 按message_id分组
+        chunks.forEach(chunk => {
+            if (!messageGroups.has(chunk.message_id)) {
+                messageGroups.set(chunk.message_id, [])
+            }
+            messageGroups.get(chunk.message_id)?.push(chunk)
+        })
+
+        // 合并每组chunks
+        return Array.from(messageGroups.values()).map(group => {
+            const firstChunk = group[0]
+            if (group.length === 1) return firstChunk
+
+            // 找到最早和最晚的时间
+            const minCreatedAt = group[0].created_at
+            const maxCompletedAt = group[group.length - 1].completed_at
+
+            return {
+                ...firstChunk,
+                content: group.map(chunk => chunk.content).join(''),
+                message_type: 'text',
+                created_at: minCreatedAt,
+                completed_at: maxCompletedAt
+            } as Message
+        })
+    }
+
+    // 计算包含chunks的history
+    const messages = useMemo(() => {
+        if (!currentThreadId && lastChunks.length === 0) return []
+
+        const mergedMessages = [
+            ...archivedMessages,
+            ...mergeChunks(lastChunks)
+        ].sort((a, b) => a.created_at - b.created_at)
+        console.log('合并后的消息:', mergedMessages)
+        return mergedMessages
+    }, [archivedMessages, lastChunks, currentThreadId])
 
     // 创建新对话
     const createNewThread = async () => {
@@ -78,17 +119,23 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
             method: 'POST',
             credentials: 'include'
         })
-        const data = await res.json()
-        const newThreadId = data
-        setCurrentThreadId(newThreadId)
-        setHistory({ ...history, [newThreadId]: { ...history[newThreadId], loaded: false, chat: [] } })
-        return newThreadId
+        const newThread = await res.json()
+        setCurrentThreadId(newThread.thread_id)
+        setThreads([...threads, newThread])
+        return newThread.thread_id
     }
 
+    // 切换当前线程，从后端加载对话消息
     const switchThread = async (threadId: string) => {
-        const allThreads = Object.keys(history)
+        const allThreads = threads.map(thread => thread.thread_id)
         if (allThreads.includes(threadId)) {
             setCurrentThreadId(threadId)
+            const res = await fetch(`${API_BASE_URL}/chat/threads/${threadId}/messages`, {
+                credentials: 'include'
+            })
+            const histMessages = await res.json()
+            console.log('加载远程对话消息数据', histMessages)
+            setArchivedMessages(histMessages)
         }
     }
 
@@ -99,51 +146,96 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
                 credentials: 'include'
             })
             const threads = await res.json()
+            setThreads(threads)
             console.log('收到的线程数据:', threads)
-            setHistory(threads)
         } catch (error) {
             console.error('加载线程失败:', error)
             throw error
         }
     }
 
-    // 加载特定对话的消息
-    const loadThreadMessages = async (threadId: string) => {
-        const allThreads = Object.keys(history)
-        if (allThreads.includes(threadId)) {
-            const thread = history[threadId]
-            if (thread.loaded) {
-                console.log('线程已加载，直接返回')
-                return thread.chat
-            } else {
-                const res = await fetch(`${API_BASE_URL}/chat/threads/${threadId}/messages`, {
-                    credentials: 'include'
-                })
-                const messages = await res.json()
-                console.log('加载远程对话消息数据', messages)
-                await setHistory({ ...history, [threadId]: { ...thread, loaded: true, chat: messages } })
-                return messages
-            }
-        }
-        return []
-    }
-
     // 发送新消息
     const ask = async (content: string) => {
         if (!currentThreadId) return
 
-        const res = await fetch(`${API_BASE_URL}/chat/threads/${currentThreadId}/messages`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                messages: [{ role: 'user', content }]
+        const abortController = new AbortController()
+        let currentMessageId: string | null = null
+
+        // 合并并清理chunks的辅助函数
+        const mergeAndClearChunks = () => {
+            if (lastChunks.length > 0) {
+                const mergedChunks = mergeChunks(lastChunks)
+                console.log('合并消息:', mergedChunks)
+                setArchivedMessages(prev => [...prev, ...mergedChunks])
+                setLastChunks([])
+            }
+        }
+
+        try {
+            await fetchEventSource(`${API_BASE_URL}/chat/threads/${currentThreadId}/ask`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ messages: [{ role: 'user', content }] }),
+                signal: abortController.signal,
+                onopen: async (response) => {
+                    if (response.status !== 200 || !response.ok) {
+                        throw new Error(`请求失败: ${response.status}`)
+                    }
+                    if (!response.body) {
+                        throw new Error('没有响应体')
+                    }
+                    return
+                },
+                onmessage(event) {
+                    try {
+                        const message: Message = JSON.parse(event.data)
+
+                        if (message.message_type === 'text_chunk') {
+                            // 检查是否需要合并之前的chunks
+                            if (currentMessageId && currentMessageId !== message.message_id) {
+                                mergeAndClearChunks()
+                            }
+                            // 更新当前message_id
+                            currentMessageId = message.message_id
+                            // 添加新chunk
+                            setLastChunks(prev => [...prev, message])
+                            console.log('收到text_chunk消息:', message)
+                        } else {
+                            mergeAndClearChunks()
+                            if (message.message_type === 'end') {
+                                // 收到结束消息，合并所有剩余chunks
+                                console.log('收到结束消息')
+                            } else {
+                                // 处理其他类型消息
+                                setArchivedMessages(prev => [...prev, message])
+                                console.log('收到其他类型消息:', message)
+                            }
+                        }
+                    } catch (e) {
+                        console.error('解析消息失败:', e)
+                    }
+                },
+                onclose() {
+                    console.log('SSE 连接已关闭')
+                    // 确保关闭时合并任何剩余的chunks
+                    mergeAndClearChunks()
+                    console.log('收到消息结束', threads)
+                },
+                onerror(err) {
+                    console.error('SSE 错误:', err)
+                    throw err
+                },
             })
-        })
-        const data = await res.json()
-        setLastChunksContent(data.message.content)
+        } catch (error) {
+            console.error('发送消息失败:', error)
+            throw error
+        } finally {
+            abortController.abort()
+        }
     }
 
     // 切换收藏状态
@@ -160,14 +252,14 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     return (
         <ChatContext.Provider value={{
             currentThreadId,
-            history,
-            lastChunksContent,
+            threads,
+            lastChunks,
+            messages,
             createNewThread,
             switchThread,
             loadAllThreads,
-            loadThreadMessages,
             ask,
-            toggleFavorite
+            toggleFavorite,
         }}>
             {children}
         </ChatContext.Provider>

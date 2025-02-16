@@ -37,7 +37,7 @@ export const AuthContext = createContext<AuthContextType>({
     },
     changeCurrentPath: async () => {
         throw new Error('AuthProvider not found')
-    }
+    },
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -170,8 +170,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <AuthContext.Provider value={{
-            user_id, device_id, username, email, role, isAuthenticated, currentPath,
-            login, logout, refresh_token, changeCurrentPath
+            user_id, device_id, username, email, role,
+            isAuthenticated, login, logout, refresh_token,
+            currentPath, changeCurrentPath,
         }}>
             {children}
         </AuthContext.Provider>

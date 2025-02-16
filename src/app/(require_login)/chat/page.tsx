@@ -2,10 +2,10 @@
 
 import { useState, useEffect, JSX, Suspense } from 'react';
 
-import { useAuth } from '@/context/AuthContext';
 import HistoryList from '@/components/Chat/HistoryList';
 import MessageList from '@/components/Chat/MessageList';
 import MessageInput from '@/components/Chat/MessageInput';
+import { useAuth } from '@/context/AuthContext';
 import { ChatProvider } from '@/context/ChatContext';
 
 function Chat(): JSX.Element {

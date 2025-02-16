@@ -20,7 +20,7 @@ export default function MessageList() {
     }, [threads])
 
     useEffect(() => {
-        console.log('messages: ', messages)
+        // console.log('messages: ', messages)
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 

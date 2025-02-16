@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { get_knowledge, update_knowledge } from '../../../utils/knowledge';
-import { useAuth } from '../../../../context/AuthContext';
-import Header from '../../../components/Header';
-import MarkdownRenderer from '../../../components/Knowledge/MarkdownRenderer';
-import SaveButton from '../../../components/Common/SaveButton';
-import TagEditor from '../../../components/Knowledge/TagEditor';
+import { get_knowledge, update_knowledge } from '@/utils/knowledge';
+import { useAuth } from '@/context/AuthContext';
+import Header from '@/components/Header';
+import MarkdownRenderer from '@/components/Knowledge/MarkdownRenderer';
+import SaveButton from '@/components/Common/SaveButton';
+import TagEditor from '@/components/Knowledge/TagEditor';
 
 export default function KnowledgeEdit() {
     const { isAuthenticated, changeCurrentPath } = useAuth();

@@ -2,11 +2,8 @@ import { http, HttpResponse } from 'msw'
 import { API_BASE_URL } from '@/utils/config'
 import { Message, Thread } from '@/context/ChatContext'
 
-const mockNewThread: Object = {
-    thread_id: 'thread-1',
-    title: '',
-    created_at: 1713235200000
-}
+let counter = 0
+const get_message_id = () => `msg-${Date.now()}-${counter++}`
 
 const mockMessages: Message[] = [
     {
@@ -110,6 +107,8 @@ export const chatHandlers = [
         const info = await request.json()
         console.log("POST chat/threads/:threadId/ask >>> ", threadId, info)
 
+        const requestId = `req-${Date.now()}`
+
         // 模拟流式响应
         const chunks = [
             "这是第一个",
@@ -118,12 +117,10 @@ export const chatHandlers = [
             "分段发送。"
         ]
 
-        const stream = new ReadableStream({
+        const create_stream = (messageId: string) => new ReadableStream({
             start(controller) {
                 let chunkIndex = 0
-                const requestId = `req-${Date.now()}`
-                const messageId1 = `msg-${Date.now()}-1`  // 使用固定的message_id
-                const messageId2 = `msg-${Date.now()}-2`  // 使用固定的message_id
+                console.log("create_stream >>> ", messageId)
 
                 const pushChunk = () => {
                     if (chunkIndex >= chunks.length) {
@@ -134,9 +131,10 @@ export const chatHandlers = [
                     }
 
                     const isLastChunk = chunkIndex === chunks.length - 1
+
                     const msg = {
                         request_id: requestId,
-                        message_id: isLastChunk ? messageId2 : messageId1,
+                        message_id: isLastChunk ? `${messageId}-text` : `${messageId}-chunk`,
                         favorite: null,
                         role: 'assistant',
                         content: chunks[chunkIndex],
@@ -158,7 +156,7 @@ export const chatHandlers = [
             }
         })
 
-        return new Response(stream, {
+        return new Response(create_stream(get_message_id()), {
             status: 200,
             headers: {
                 'Content-Type': 'text/event-stream',

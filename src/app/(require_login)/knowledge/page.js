@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../../context/AuthContext';
-import { get_knowledge_list, get_knowledge } from '../../../utils/knowledge';
-import KnowledgeCard from '../../../components/Knowledge/KnowledgeCard';
+import { useAuth } from '@/context/AuthContext';
+import { get_knowledge_list, get_knowledge } from '@/utils/knowledge';
+import KnowledgeCard from '@/components/Knowledge/KnowledgeCard';
 
 export default function KnowledgePage() {
     const { isAuthenticated, changeCurrentPath } = useAuth();

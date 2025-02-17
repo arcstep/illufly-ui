@@ -12,7 +12,6 @@ function Chat(): JSX.Element {
     const { isAuthenticated, changeCurrentPath } = useAuth();
     const [isHistoryListVisible] = useState(true);
 
-
     useEffect(() => {
         changeCurrentPath('/chat');
     }, []);
@@ -35,7 +34,6 @@ function Chat(): JSX.Element {
                 <MessageInput />
             </div>
         </div>
-
     );
 }
 

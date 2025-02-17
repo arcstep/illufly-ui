@@ -67,7 +67,7 @@ export const chatHandlers = [
     http.post(`${API_BASE_URL}/chat/threads`, () => {
         const newThread = {
             thread_id: 'thread-new',
-            title: '',
+            title: '新对话 ...',
             created_at: Date.now()
         }
         return HttpResponse.json(newThread)
@@ -91,6 +91,8 @@ export const chatHandlers = [
             } else {
                 return HttpResponse.json(mockMessages.slice(0, 2))
             }
+        } else if (threadId === 'thread-new') {
+            return HttpResponse.json([])
         } else {
             return HttpResponse.json({ error: 'Thread not found' }, { status: 404 })
         }

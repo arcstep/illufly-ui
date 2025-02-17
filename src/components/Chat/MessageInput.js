@@ -34,8 +34,8 @@ export default function MessageInput() {
     };
 
     return (
-        <div className="sticky bottom-0 bg-gray-100 p-4 shadow-inner">
-            <div className="flex flex-col bg-white p-3 rounded-lg shadow-md">
+        <div className="sticky bottom-0 bg-gray-100 p-1 rounded-lg shadow-inner">
+            <div className="flex flex-col bg-white p-2 rounded-lg shadow-md">
                 {selectedFiles.length > 0 && (
                     <div className="flex flex-wrap mb-2">
                         {selectedFiles.map((file, index) => (

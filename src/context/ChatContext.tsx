@@ -133,6 +133,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         const newThread = await res.json()
         setCurrentThreadId(newThread.thread_id)
         setThreads([...threads, newThread])
+        setArchivedMessages([])
+        setLastChunks([])
         return newThread.thread_id
     }
 
@@ -146,7 +148,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
             })
             const histMessages = await res.json()
             console.log('加载远程对话消息数据', histMessages)
-            setArchivedMessages(histMessages)
+            setArchivedMessages(histMessages || [])
         }
     }
 

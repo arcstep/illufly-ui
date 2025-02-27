@@ -1,7 +1,6 @@
 import { API_BASE_URL } from '@/utils/config'
 import { http, HttpResponse } from 'msw'
 
-
 export const authHandlers = [
     http.post(`${API_BASE_URL}/auth/login`, async ({ request }) => {
         try {

@@ -5,7 +5,7 @@ let isInitialized = false
 
 export async function initMockServer() {
     // 开发环境且未初始化过
-    if (process.env.NODE_ENV !== 'development' || isInitialized) {
+    if (process.env.NEXT_PUBLIC_API_MOCKING !== 'enabled') {
         return
     }
 

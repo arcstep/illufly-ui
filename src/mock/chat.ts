@@ -7,9 +7,10 @@ const get_message_id = () => `msg-${Date.now()}-${counter++}`
 
 const mockMessages: Message[] = [
     {
+        block_type: 'question',
         request_id: 'req1',
         message_id: 'msg-1',
-        favorite: null,
+        favorite_id: '',
         role: 'user',
         content: '什么是 AI？',
         message_type: 'text',
@@ -17,9 +18,10 @@ const mockMessages: Message[] = [
         completed_at: 1713235200000,
     },
     {
+        block_type: 'answer',
         request_id: 'req2',
         message_id: 'msg-2',
-        favorite: null,
+        favorite_id: '',
         role: 'assistant',
         content: 'AI 是...',
         message_type: 'text',
@@ -27,9 +29,10 @@ const mockMessages: Message[] = [
         completed_at: 1713235400000,
     },
     {
+        block_type: 'question',
         request_id: 'req3',
         message_id: 'msg-3',
-        favorite: null,
+        favorite_id: '',
         role: 'user',
         content: '什么是 AI？',
         message_type: 'text',
@@ -37,9 +40,10 @@ const mockMessages: Message[] = [
         completed_at: 17132352080000,
     },
     {
+        block_type: 'answer',
         request_id: 'req4',
         message_id: 'msg-4',
-        favorite: null,
+        favorite_id: '',
         role: 'assistant',
         content: 'AI 是...',
         message_type: 'text',
@@ -135,9 +139,10 @@ export const chatHandlers = [
                     const isLastChunk = chunkIndex === chunks.length - 1
 
                     const msg = {
+                        block_type: 'answer',
                         request_id: requestId,
                         message_id: isLastChunk ? `${messageId}-text` : `${messageId}-chunk`,
-                        favorite: null,
+                        favorite_id: '',
                         role: 'assistant',
                         content: chunks[chunkIndex],
                         message_type: isLastChunk ? 'text' : 'text_chunk',

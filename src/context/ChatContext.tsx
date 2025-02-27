@@ -6,12 +6,13 @@ import { fetchEventSource } from '@microsoft/fetch-event-source'
 
 // 基础消息类型
 export interface Message {
+    block_type: 'question' | 'answer'
     request_id: string
     message_id: string
-    message_type: 'text' | 'image' | 'audio' | 'video' | 'file' | 'text_chunk' | 'end'
-    favorite: string | null
-    role: 'user' | 'assistant'
-    content: string
+    message_type: 'image' | 'audio' | 'video' | 'file' | 'text_chunk' | 'text'
+    favorite_id: string | null
+    role: 'user' | 'assistant' | 'system' | 'tool'
+    content: string | Object
     created_at: number
     completed_at: number
 }

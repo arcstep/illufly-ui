@@ -11,6 +11,12 @@ export default function MessageList() {
     const messagesEndRef = useRef(null);
     const [selectedMessageIds, setSelectedMessageIds] = useState([]);
     const [attitude, setAttitude] = useState({});
+    const emoji_icons = {
+        "user": "🧑‍💼",
+        "assistant": "🤖",
+        "system": "❤️",
+        "tool": "🔧"
+    }
 
     useEffect(() => {
         const lastThread = threads.sort((a, b) => b.created_at - a.created_at)[0]
@@ -79,7 +85,7 @@ export default function MessageList() {
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-2">
                                     <span className="font-medium text-gray-700">
-                                        {message.role}
+                                        {emoji_icons[message.role]}
                                     </span>
                                     <span className="inline-block bg-blue-100 text-blue-800 text-xs rounded-full px-2 py-0.5">
                                         {message.message_type.toUpperCase()}

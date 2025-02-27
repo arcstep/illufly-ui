@@ -12,7 +12,7 @@ const mockMessages: Message[] = [
         message_id: 'msg-1',
         favorite_id: '',
         role: 'user',
-        content: '什么是 AI？',
+        text: '什么是 AI？',
         message_type: 'text',
         created_at: 1713235200000,
         completed_at: 1713235200000,
@@ -23,7 +23,7 @@ const mockMessages: Message[] = [
         message_id: 'msg-2',
         favorite_id: '',
         role: 'assistant',
-        content: 'AI 是...',
+        text: 'AI 是...',
         message_type: 'text',
         created_at: 1713235202000,
         completed_at: 1713235400000,
@@ -34,7 +34,7 @@ const mockMessages: Message[] = [
         message_id: 'msg-3',
         favorite_id: '',
         role: 'user',
-        content: '什么是 AI？',
+        text: '什么是 AI？',
         message_type: 'text',
         created_at: 1713235206000,
         completed_at: 17132352080000,
@@ -45,7 +45,7 @@ const mockMessages: Message[] = [
         message_id: 'msg-4',
         favorite_id: '',
         role: 'assistant',
-        content: 'AI 是...',
+        text: 'AI 是...',
         message_type: 'text',
         created_at: 1713235210000,
         completed_at: 1713235212000,
@@ -108,14 +108,10 @@ export const chatHandlers = [
     }),
 
     // 发送消息
-    http.post(`${API_BASE_URL}/chat/threads/:threadId/ask`, async ({ params, request }) => {
-        const { threadId } = params
-        const info = await request.json()
-        console.log("POST chat/threads/:threadId/ask >>> ", threadId, info)
+    http.post(`${API_BASE_URL}/chat/complete`, async ({ request }) => {
+        console.log("POST chat/complete >>> ", request)
 
         const requestId = `req-${Date.now()}`
-
-        // 模拟流式响应
         const chunks = [
             "这是第一个",
             "消息块，",
@@ -144,7 +140,7 @@ export const chatHandlers = [
                         message_id: isLastChunk ? `${messageId}-text` : `${messageId}-chunk`,
                         favorite_id: '',
                         role: 'assistant',
-                        content: chunks[chunkIndex],
+                        text: chunks[chunkIndex],
                         message_type: isLastChunk ? 'text' : 'text_chunk',
                         created_at: Date.now(),
                         completed_at: Date.now()
@@ -166,7 +162,7 @@ export const chatHandlers = [
         return new Response(create_stream(get_message_id()), {
             status: 200,
             headers: {
-                'Content-Type': 'text/event-stream',
+                'text-Type': 'text/event-stream',
                 'Connection': 'keep-alive',
                 'Cache-Control': 'no-cache',
                 'Access-Control-Allow-Origin': '*'

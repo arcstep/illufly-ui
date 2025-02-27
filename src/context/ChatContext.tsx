@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useState, useContext, useMemo, useEffect } from 'react'
+import { createContext, useState, useContext, useMemo, useEffect, useRef } from 'react'
 import { API_BASE_URL } from '@/utils/config'
 import { fetchEventSource } from '@microsoft/fetch-event-source'
 
@@ -12,7 +12,7 @@ export interface Message {
     message_type: 'image' | 'audio' | 'video' | 'file' | 'text_chunk' | 'text'
     favorite_id: string | null
     role: 'user' | 'assistant' | 'system' | 'tool'
-    content: string | Object
+    text: string | Object
     created_at: number
     completed_at: number
 }
@@ -72,6 +72,14 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     const [archivedMessages, setArchivedMessages] = useState<Message[]>([])
     const [pendingMessages, setPendingMessages] = useState<Message[]>([])
 
+    // 在组件顶部添加一个ref来跟踪已处理的消息
+    const processedMessageIds = useRef(new Set<string>())
+
+    // 在每次请求开始时重置已处理消息ID
+    const resetProcessedIds = () => {
+        processedMessageIds.current.clear()
+    }
+
     // 监听pendingMessages变化，批量更新archivedMessages
     useEffect(() => {
         if (pendingMessages.length > 0) {
@@ -80,11 +88,13 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         }
     }, [pendingMessages])
 
-    // 合并chunks的工具函数
+    // 修改你现有的mergeChunks函数，确保不会重复处理相同ID
     const mergeChunks = (chunks: Message[]): Message[] => {
         if (chunks.length === 0) return []
 
         const messageGroups = new Map<string, Message[]>()
+
+        // 按message_id分组
         chunks.forEach(chunk => {
             if (!messageGroups.has(chunk.message_id)) {
                 messageGroups.set(chunk.message_id, [])
@@ -92,25 +102,23 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
             messageGroups.get(chunk.message_id)?.push(chunk)
         })
 
-        return Array.from(messageGroups.values()).map(group => {
-            const firstChunk = group[0]
-            if (group.length === 1) return firstChunk
+        // 合并每组chunks，但跳过已处理的ID
+        return Array.from(messageGroups.entries())
+            .filter(([messageId]) => !processedMessageIds.current.has(messageId))
+            .map(([messageId, group]) => {
+                // 标记为已处理
+                processedMessageIds.current.add(messageId)
 
-            const minCreatedAt = Math.min(
-                ...group.map(chunk => chunk.created_at)
-            )
-            const maxCompletedAt = Math.max(
-                ...group.map(chunk => chunk.completed_at)
-            )
+                const firstChunk = group[0]
+                if (group.length === 1) return firstChunk
 
-            return {
-                ...firstChunk,
-                content: group.map(chunk => chunk.content).join(''),
-                message_type: 'text',
-                created_at: minCreatedAt,
-                completed_at: maxCompletedAt
-            } as Message
-        })
+                // 合并同一message_id的chunks
+                return {
+                    ...firstChunk,
+                    text: group.map(chunk => chunk.text).join(''),
+                    message_type: 'text' // 合并后转为完整消息
+                }
+            })
     }
 
     // 计算包含chunks的history
@@ -120,7 +128,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         const mergedMessages = [
             ...archivedMessages,
             ...mergeChunks(lastChunks)
-        ].sort((a, b) => a.created_at - b.created_at)
+        ].sort((a, b) => a.completed_at - b.completed_at)
         // console.log('合并后的消息:', mergedMessages)
         return mergedMessages
     }, [archivedMessages, lastChunks, currentThreadId])
@@ -144,7 +152,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         const allThreads = threads.map(thread => thread.thread_id)
         if (allThreads.includes(threadId)) {
             setCurrentThreadId(threadId)
-            const res = await fetch(`${API_BASE_URL}/chat/threads/${threadId}/messages`, {
+            const res = await fetch(`${API_BASE_URL}/chat/thread/${threadId}/messages`, {
                 credentials: 'include'
             })
             const histMessages = await res.json()
@@ -172,36 +180,61 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     const ask = async (content: string) => {
         if (!currentThreadId) return
 
+        // 重置状态
+        setLastChunks([])
+        resetProcessedIds()
+
         const abortController = new AbortController()
         let currentMessageId: string | null = null
 
-        // 合并并清理chunks的辅助函数
+        // 合并chunks的辅助函数
         const mergeAndClearChunks = () => {
-            if (lastChunks.length === 0) return
-
-            // 先获取当前chunks的快照
-            const currentChunks = [...lastChunks]
-            const mergedChunks = mergeChunks(currentChunks)
-            console.log('合并消息:', mergedChunks)
-
-            // 使用函数式更新确保原子性
-            setPendingMessages(prev => [...prev, ...mergedChunks])
             setLastChunks(prev => {
-                // 只清除已合并的chunks
-                if (prev === currentChunks) return []
-                return prev.filter(chunk => !currentChunks.includes(chunk))
+                if (prev.length === 0) return prev
+
+                // 获取当前要处理的message_id
+                const messageId = prev[0]?.message_id
+
+                // 如果已经处理过这个ID，跳过
+                if (processedMessageIds.current.has(messageId)) {
+                    console.log(`跳过已处理的message_id: ${messageId}`)
+                    return prev
+                }
+
+                // 只处理当前message_id的chunks
+                const chunksToProcess = prev.filter(chunk => chunk.message_id === messageId)
+                const otherChunks = prev.filter(chunk => chunk.message_id !== messageId)
+
+                if (chunksToProcess.length > 0) {
+                    const mergedChunks = mergeChunks(chunksToProcess)
+                    console.log('合并消息:', mergedChunks)
+
+                    // 标记为已处理
+                    processedMessageIds.current.add(messageId)
+
+                    // 更新历史记录
+                    setPendingMessages(prev => [...prev, ...mergedChunks])
+
+                    // 只返回未处理的chunks
+                    return otherChunks
+                }
+
+                return prev
             })
         }
 
         try {
-            await fetchEventSource(`${API_BASE_URL}/chat/threads/${currentThreadId}/ask`, {
+            await fetchEventSource(`${API_BASE_URL}/chat/complete`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: {
                     'accept': 'application/json',
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ messages: [{ role: 'user', content }] }),
+                body: JSON.stringify({
+                    thread_id: currentThreadId,
+                    messages: [{ role: 'user', content }]
+                }),
                 signal: abortController.signal,
                 onopen: async (response) => {
                     if (response.status !== 200 || !response.ok) {
@@ -214,15 +247,22 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
                 },
                 onmessage(event) {
                     try {
+                        console.log('收到消息:', event.data)
+                        if (event.data === '[DONE]') {
+                            mergeAndClearChunks()
+                            return
+                        }
                         const message: Message = JSON.parse(event.data)
 
                         if (message.message_type === 'text_chunk') {
+                            console.log('收到文本块:', message)
                             if (currentMessageId && currentMessageId !== message.message_id) {
                                 mergeAndClearChunks()
                             }
                             currentMessageId = message.message_id
                             setLastChunks(prev => [...prev, message])
                         } else if (message.message_type === 'text') {
+                            console.log('收到完整消息:', message)
                             mergeAndClearChunks() // 先合并之前的chunks
                             setPendingMessages(prev => [...prev, message]) // 添加完整消息
                         }
@@ -231,7 +271,11 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
                     }
                 },
                 onclose() {
-                    mergeAndClearChunks() // 确保关闭时合并所有剩余chunks
+                    console.log('SSE 连接已关闭')
+                    mergeAndClearChunks()
+                    // 重置处理状态
+                    currentMessageId = null
+                    processedMessageIds.current.clear()
                 },
                 onerror(err) {
                     console.error('SSE 错误:', err)

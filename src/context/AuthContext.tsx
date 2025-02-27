@@ -58,11 +58,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [currentPath, setCurrentPath] = useState<string | null>(null)
 
     useEffect(() => {
-        if (!noAuthPaths.includes(pathname)) {
-            refresh_token()
-        } else {
-            setIsLoading(false)
+        // 只在客户端执行
+        if (typeof window === 'undefined') return;
+
+        // 不在登录页等页面执行
+        if (noAuthPaths.includes(pathname)) {
+            setIsLoading(false);
+            return;
         }
+
+        refresh_token();
     }, [pathname])
 
     const refresh_token = async () => {
@@ -78,12 +83,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 headers: {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json',
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
                 },
                 credentials: 'include',
-                signal: AbortSignal.timeout(5000)
+                signal: AbortSignal.timeout(8000),
             })
 
-            console.log('获取到响应:', res.status)
+            const cookies = res.headers.get('set-cookie');
+            console.log('响应中的cookie头:', cookies ? '存在' : '不存在');
             if (res.ok) {
                 const token_claims = await res.json()
                 setUserId(token_claims.user_id)

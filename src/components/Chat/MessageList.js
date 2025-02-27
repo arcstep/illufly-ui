@@ -89,14 +89,14 @@ export default function MessageList() {
                                             <FontAwesomeIcon icon={faStar} className="text-sm" />
                                         </span>
                                     )}
-                                    <CopyButton content={message.content} />
+                                    <CopyButton content={message.text} />
                                     <span className="text-xs text-gray-400 ml-auto">
-                                        {new Date(message.completed_at).toLocaleString()}
+                                        {new Date(message.completed_at * 1000).toLocaleString()}
                                     </span>
                                 </div>
                                 <div className="text-gray-800">
                                     <MarkdownRenderer
-                                        content={message.content}
+                                        content={message.text}
                                         className="prose prose-sm max-w-none"
                                     />
                                 </div>

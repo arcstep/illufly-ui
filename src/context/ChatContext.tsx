@@ -6,6 +6,7 @@ import { fetchEventSource } from '@microsoft/fetch-event-source'
 
 // 基础消息类型
 export interface Message {
+    model: string
     block_type: 'question' | 'answer'
     request_id: string
     message_id: string
@@ -232,6 +233,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
+                    imitator: 'QWEN',
+                    model: 'qwen-plus',
                     thread_id: currentThreadId,
                     messages: [{ role: 'user', content }]
                 }),

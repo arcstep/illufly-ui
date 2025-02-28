@@ -7,6 +7,7 @@ const get_message_id = () => `msg-${Date.now()}-${counter++}`
 
 const mockMessages: Message[] = [
     {
+        model: 'gpt-4o',
         block_type: 'question',
         request_id: 'req1',
         message_id: 'msg-1',
@@ -18,6 +19,7 @@ const mockMessages: Message[] = [
         completed_at: 1713235200000,
     },
     {
+        model: 'gpt-4o',
         block_type: 'answer',
         request_id: 'req2',
         message_id: 'msg-2',
@@ -29,6 +31,7 @@ const mockMessages: Message[] = [
         completed_at: 1713235400000,
     },
     {
+        model: 'gpt-4o',
         block_type: 'question',
         request_id: 'req3',
         message_id: 'msg-3',
@@ -40,6 +43,7 @@ const mockMessages: Message[] = [
         completed_at: 17132352080000,
     },
     {
+        model: 'gpt-4o',
         block_type: 'answer',
         request_id: 'req4',
         message_id: 'msg-4',
@@ -135,6 +139,7 @@ export const chatHandlers = [
                     const isLastChunk = chunkIndex === chunks.length - 1
 
                     const msg = {
+                        model: 'gpt-4o',
                         block_type: 'answer',
                         request_id: requestId,
                         message_id: isLastChunk ? `${messageId}-text` : `${messageId}-chunk`,

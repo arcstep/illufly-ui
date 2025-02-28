@@ -90,8 +90,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 signal: AbortSignal.timeout(8000),
             })
 
-            const cookies = res.headers.get('set-cookie');
-            console.log('响应中的cookie头:', cookies ? '存在' : '不存在');
             if (res.ok) {
                 const token_claims = await res.json()
                 setUserId(token_claims.user_id)

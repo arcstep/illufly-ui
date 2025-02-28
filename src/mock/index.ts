@@ -1,8 +1,6 @@
 import { authHandlers } from './auth'
 import { chatHandlers } from './chat'
 
-let isInitialized = false
-
 export async function initMockServer() {
     // 开发环境且未初始化过
     if (process.env.NEXT_PUBLIC_API_MOCKING !== 'enabled') {
@@ -36,7 +34,6 @@ export async function initMockServer() {
             }
         })
 
-        isInitialized = true
         console.log(`[MSW] 初始化完成，耗时 ${Date.now() - startTime}ms`)
     } catch (error) {
         console.error('[MSW] 初始化失败:', error)

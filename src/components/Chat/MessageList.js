@@ -85,7 +85,7 @@ export default function MessageList() {
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-2">
                                     <span className="font-medium text-gray-700">
-                                        {emoji_icons[message.role]}
+                                        {emoji_icons[message.role] + ' ' + message.service_name}
                                     </span>
                                     <span className="inline-block bg-blue-100 text-blue-800 text-xs rounded-full px-2 py-0.5">
                                         {message.message_type.toUpperCase()}

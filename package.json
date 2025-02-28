@@ -10,7 +10,7 @@
     "lint": "next lint",
     "build:static": "next build",
     "build:ssr": "next build",
-    "copy-to-illufly": "yarn build:static && node scripts/copy-to-illufly.js"
+    "copy-to-illufly": "NEXT_PUBLIC_API_BASE_URL=/api yarn build:static && node scripts/copy-to-illufly.js"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.5.1",

@@ -41,7 +41,7 @@ export default function HistoryList() {
                             onClick={() => switchThread(thread_id)}
                             className="w-full p-2 text-left hover:bg-gray-100"
                         >
-                            <div className="font-medium">{title}</div>
+                            <div className="font-medium">{title || '新对话'}</div>
                         </button>
                     </div>
                 ))

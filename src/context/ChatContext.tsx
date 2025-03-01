@@ -157,6 +157,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         setThreads([...threads, newThread])
         setArchivedMessages([])
         setLastChunks([])
+        await loadAllThreads()
         return newThread.thread_id
     }
 

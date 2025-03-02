@@ -4,7 +4,8 @@ import { createContext, useState, useContext, useEffect } from 'react'
 import { API_BASE_URL } from '@/utils/config'
 
 interface Apikey {
-    apikey: string
+    api_key: string
+    base_url: string
     user_id: string
     description: string
     created_at: number
@@ -12,19 +13,17 @@ interface Apikey {
     is_expired: boolean
 }
 
-// 基础消息类型
 export interface ApikeyContextType {
     apikeys: Apikey[]
-    currentApikey: Apikey | null
-    createApikey: (user_id: string, description: string) => Promise<void>
-    listApikeys: (user_id: string) => Promise<void>
-    revokeApikey: (user_id: string, key: string) => Promise<void>
-    changeCurrentApikey: (apikey: Apikey) => Promise<void>
+    imitators: string[]
+    createApikey: (description: string, imitator: string) => Promise<string>
+    listApikeys: () => Promise<void>
+    revokeApikey: (key: string) => Promise<void>
 }
 
 export const ApikeysContext = createContext<ApikeyContextType>({
     apikeys: [],
-    currentApikey: null,
+    imitators: [],
     createApikey: async () => {
         throw new Error('ApikeysProvider not found')
     },
@@ -33,29 +32,60 @@ export const ApikeysContext = createContext<ApikeyContextType>({
     },
     revokeApikey: async () => {
         throw new Error('ApikeysProvider not found')
-    },
-    changeCurrentApikey: async () => {
-        throw new Error('ApikeysProvider not found')
     }
 })
 
 export function ApikeysProvider({ children }: { children: React.ReactNode }) {
     const [isLoading, setIsLoading] = useState(true)
     const [apikeys, setApikeys] = useState<Apikey[]>([])
-    const [currentApikey, setCurrentApikey] = useState<Apikey | null>(null)
+    const [imitators, setImitators] = useState<string[]>([])
+
+    const listImitators = async () => {
+        try {
+            const api_url = `${API_BASE_URL}/imitators`
+            const res = await fetch(api_url, {
+                method: 'GET',
+                credentials: 'include',
+            })
+
+            if (res.ok) {
+                const data = await res.json()
+                console.log('imitators response >>> ', data)
+                // 确保设置正确的数据结构
+                if (data && data.imitators && Array.isArray(data.imitators)) {
+                    setImitators(data.imitators)
+                } else if (Array.isArray(data)) {
+                    // 如果直接返回数组
+                    setImitators(data)
+                } else {
+                    console.error('imitators数据格式不正确', data)
+                    // 设置默认值
+                    setImitators(['OPENAI', 'QWEN', 'ZHIPU'])
+                }
+            } else {
+                console.error('获取imitators失败', res.status)
+                // 设置默认值
+                setImitators(['OPENAI', 'QWEN', 'ZHIPU'])
+            }
+        } catch (error) {
+            console.error('获取imitators出错:', error)
+            // 设置默认值
+            setImitators(['OPENAI', 'QWEN', 'ZHIPU'])
+        }
+    }
 
     useEffect(() => {
         // 只在客户端执行
         if (typeof window === 'undefined') return;
 
-        listApikeys();
-    }, [])
+        // 优先获取imitators列表
+        listImitators().then(() => {
+            // 然后获取apikeys列表
+            listApikeys();
+        });
+    }, []);
 
-    const changeCurrentApikey = async (apikey: Apikey) => {
-        setCurrentApikey(apikey)
-    }
-
-    const createApikey = async (user_id: string, description: string) => {
+    const createApikey = async (description: string, imitator: string): Promise<string> => {
         const api_url = `${API_BASE_URL}/apikeys`
         try {
             setIsLoading(true)
@@ -65,28 +95,37 @@ export function ApikeysProvider({ children }: { children: React.ReactNode }) {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ user_id, description })
+                body: JSON.stringify({ description, imitator }),
+                credentials: 'include',
             })
 
             if (res.ok) {
-                const apikey = await res.json()
-                console.log('apikey >>> ', apikey)
+                const data = await res.json()
+                console.log('apikey >>> ', data)
+                // 刷新API密钥列表
+                await listApikeys()
+                return data.apikey // 返回新创建的API密钥
             } else {
                 console.log('创建 APIKEY 失败')
+                throw new Error('创建 APIKEY 失败')
             }
         } catch (error) {
             console.error('创建 APIKEY 失败:', {
                 error,
             })
+            throw error
+        } finally {
+            setIsLoading(false)
         }
     }
 
-    const revokeApikey = async (user_id: string, key: string) => {
-        const api_url = `${API_BASE_URL}/apikeys/${user_id}/${key}`
+    const revokeApikey = async (key: string) => {
+        const api_url = `${API_BASE_URL}/apikeys/revoke/${key}`
         try {
             setIsLoading(true)
             const res = await fetch(api_url, {
                 method: 'POST',
+                credentials: 'include',
             })
 
             if (res.ok) {
@@ -98,6 +137,8 @@ export function ApikeysProvider({ children }: { children: React.ReactNode }) {
             console.error('撤销 APIKEY 失败:', {
                 error,
             })
+        } finally {
+            setIsLoading(false)
         }
     }
 
@@ -119,7 +160,7 @@ export function ApikeysProvider({ children }: { children: React.ReactNode }) {
             if (res.ok) {
                 const apikeys_list = await res.json()
                 console.log('apikeys_list >>> ', apikeys_list)
-                setApikeys(apikeys_list.data)
+                setApikeys(apikeys_list)
             } else {
                 console.log('获取 APIKEYS 失败')
             }
@@ -141,9 +182,8 @@ export function ApikeysProvider({ children }: { children: React.ReactNode }) {
     return (
         <ApikeysContext.Provider value={{
             apikeys,
-            currentApikey,
-            createApikey, listApikeys, revokeApikey,
-            changeCurrentApikey
+            imitators,
+            createApikey, listApikeys, revokeApikey
         }}>
             {children}
         </ApikeysContext.Provider>

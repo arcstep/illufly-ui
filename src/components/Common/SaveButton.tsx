@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function SaveButton({ onClick, isContentChanged = true }) {
+export default function SaveButton({ onClick, isContentChanged = true }: { onClick: (event: React.MouseEvent<HTMLButtonElement>) => Promise<void>, isContentChanged: boolean }) {
     const [saveMessage, setSaveMessage] = useState({ show: false, type: 'success', position: { x: 0, y: 0 } });
     const [showButton, setShowButton] = useState(isContentChanged);
 
@@ -10,7 +10,7 @@ export default function SaveButton({ onClick, isContentChanged = true }) {
         }
     }, [isContentChanged]);
 
-    const handleClick = async (event) => {
+    const handleClick = async (event: React.MouseEvent<HTMLButtonElement>) => {
         try {
             await onClick?.(event);
             // 显示成功消息
@@ -21,7 +21,7 @@ export default function SaveButton({ onClick, isContentChanged = true }) {
             });
             // 1500ms 后隐藏消息，然后隐藏按钮
             setTimeout(() => {
-                setSaveMessage({ show: false, position: { x: 0, y: 0 } });
+                setSaveMessage({ show: false, type: 'success', position: { x: 0, y: 0 } });
                 setTimeout(() => setShowButton(false), 200); // 在消息消失后再隐藏按钮
             }, 1500);
         } catch (error) {
@@ -32,7 +32,7 @@ export default function SaveButton({ onClick, isContentChanged = true }) {
                 position: { x: event.clientX, y: event.clientY }
             });
             // 1500ms 后隐藏消息
-            setTimeout(() => setSaveMessage({ show: false, position: { x: 0, y: 0 } }), 1500);
+            setTimeout(() => setSaveMessage({ show: false, type: 'error', position: { x: 0, y: 0 } }), 1500);
         }
     };
 

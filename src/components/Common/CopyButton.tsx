@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCopy, faSpinner } from '@fortawesome/free-solid-svg-icons';
 
-export default function CopyButton({ content, getContent }) {
+export default function CopyButton({ content, getContent }: { content: string, getContent?: () => Promise<string> }) {
     const [copySuccess, setCopySuccess] = useState({ show: false, position: { x: 0, y: 0 } });
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleCopy = async (event) => {
+    const handleCopy = async (event: React.MouseEvent<HTMLButtonElement>) => {
         let textToCopy = content;
 
         // 如果提供了 getContent 函数，则调用它获取内容
@@ -41,7 +41,7 @@ export default function CopyButton({ content, getContent }) {
                 title="复制内容"
                 disabled={isLoading}
             >
-                <FontAwesomeIcon icon={isLoading ? faSpinner : faCopy} className={isLoading ? 'animate-spin' : ''} />
+                <FontAwesomeIcon icon={isLoading ? faSpinner : faCopy as any} className={isLoading ? 'animate-spin' : ''} />
             </button>
             {copySuccess.show && (
                 <div

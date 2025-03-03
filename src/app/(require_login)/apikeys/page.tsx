@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import CopyButton from '@/components/Common/CopyButton';
 import { useApikeys, ApikeysProvider } from '@/context/ApikeysContext';
 import { useAuth } from '@/context/AuthContext';
@@ -9,15 +9,17 @@ import { format } from 'date-fns';
 export default function ApikeysPageWrapper() {
     return (
         <div className="p-5 h-screen flex flex-col">
-            <ApikeysProvider>
-                <ApikeysPageContent />
-            </ApikeysProvider>
+            <Suspense fallback={<div>Loading...</div>}>
+                <ApikeysProvider>
+                    <ApikeysPageContent />
+                </ApikeysProvider>
+            </Suspense>
         </div>
     );
 }
 
 function ApikeysPageContent() {
-    const { changeCurrentPath } = useAuth();
+    const { changeCurrentPath, isAuthenticated } = useAuth();
     const { apikeys, imitators, createApikey, listApikeys, revokeApikey } = useApikeys();
     const [description, setDescription] = useState('');
     const [selectedImitator, setSelectedImitator] = useState('');
@@ -25,7 +27,9 @@ function ApikeysPageContent() {
 
     useEffect(() => {
         changeCurrentPath('/apikeys');
-    }, [changeCurrentPath]);
+    }, []);
+
+    if (!isAuthenticated) return <div>Loading...</div>;
 
     // 当 imitators 加载完成后设置默认值
     useEffect(() => {
@@ -69,7 +73,7 @@ function ApikeysPageContent() {
                 <div className="flex flex-col space-y-4">
                     {/* Imitator 选择 */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">API兼容模式</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">大模型提供方</label>
                         <div className="flex flex-wrap gap-4">
                             {imitators && imitators.map((imitator) => (
                                 <label key={imitator} className="inline-flex items-center">

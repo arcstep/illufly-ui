@@ -6,20 +6,15 @@ import { fetchEventSource } from '@microsoft/fetch-event-source'
 
 // 基础消息类型
 export interface Message {
-    model: string
-    block_type: 'question' | 'answer'
-    request_id: string
-    message_id: string
-    message_type: 'image' | 'audio' | 'video' | 'file' | 'text_chunk' | 'text'
-    favorite_id: string | null
     role: 'user' | 'assistant' | 'system' | 'tool'
-    text: string
+    content: string
     created_at: number
-    completed_at: number
+    dialouge_id: string
 }
 
 // 线程
 export interface Thread {
+    user_id: string
     thread_id: string
     title: string
     created_at: number
@@ -90,20 +85,19 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
         const messageGroups = new Map<string, Message[]>()
 
-        // 按message_id分组
-        chunks.forEach(chunk => {
-            if (!messageGroups.has(chunk.message_id)) {
-                messageGroups.set(chunk.message_id, [])
+        // 按 dialouge_id 分组
+        chunks.forEach((chunk: Message) => {
+            if (!messageGroups.has(chunk.dialouge_id)) {
+                messageGroups.set(chunk.dialouge_id, [])
             }
-            messageGroups.get(chunk.message_id)?.push(chunk)
+            messageGroups.get(chunk.dialouge_id)?.push(chunk)
         })
-
         // 合并每组chunks，但跳过已处理的ID
         return Array.from(messageGroups.entries())
-            .filter(([messageId]) => !activeMessagesRef.current.has(messageId))
-            .map(([messageId, group]) => {
+            .filter(([dialougeId]) => !activeMessagesRef.current.has(dialougeId))
+            .map(([dialougeId, group]) => {
                 // 标记为已处理
-                activeMessagesRef.current.set(messageId, group[0])
+                activeMessagesRef.current.set(dialougeId, group[0] as Message)
 
                 const firstChunk = group[0]
                 if (group.length === 1) return firstChunk
@@ -111,8 +105,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
                 // 合并同一message_id的chunks
                 return {
                     ...firstChunk,
-                    text: group.map(chunk => chunk.text).join(''),
-                    message_type: 'text' // 合并后转为完整消息
+                    content: group.map(chunk => chunk.content).join(''),
+                    role: 'assistant' // 合并后转为完整消息
                 }
             })
     }
@@ -131,17 +125,17 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         const messageMap = new Map<string, Message>()
         allMessages.forEach(msg => {
             // 提取真实message_id（移除临时前缀）
-            const realId = msg.message_id.replace(/^temp_/, '')
+            const realId = msg.dialouge_id.replace(/^temp_/, '')
 
             // 如果Map中不存在此ID或当前消息更新，则更新Map
-            if (!messageMap.has(realId) || msg.completed_at > messageMap.get(realId)!.completed_at) {
+            if (!messageMap.has(realId) || msg.created_at > messageMap.get(realId)!.created_at) {
                 messageMap.set(realId, msg)
             }
         })
 
         // 转换回数组并排序
         const uniqueMessages = Array.from(messageMap.values())
-            .sort((a, b) => a.completed_at - b.completed_at)
+            .sort((a, b) => a.created_at - b.created_at)
 
         return uniqueMessages
     }, [archivedMessages, lastChunks, currentThreadId])
@@ -197,39 +191,48 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         // 重置状态
         setLastChunks([])
 
+        // 添加用户消息到历史记录
+        const userMessage: Message = {
+            role: 'user',
+            content,
+            created_at: Date.now() / 1000,
+            dialouge_id: `user_${Date.now()}`
+        }
+        setArchivedMessages(prev => [...prev, userMessage])
+
         const abortController = new AbortController()
 
         // 合并chunks的辅助函数
         const mergeAndClearChunks = () => {
             setLastChunks(prev => {
-                // 按message_id分组
+                // 按dialouge_id分组
                 const messageGroups = new Map<string, Message[]>()
-                prev.forEach(chunk => {
-                    if (!messageGroups.has(chunk.message_id)) {
-                        messageGroups.set(chunk.message_id, [])
+                prev.forEach((chunk: Message) => {
+                    if (!messageGroups.has(chunk.dialouge_id)) {
+                        messageGroups.set(chunk.dialouge_id, [])
                     }
-                    messageGroups.get(chunk.message_id)?.push(chunk)
+                    messageGroups.get(chunk.dialouge_id)?.push(chunk)
                 })
 
                 // 最终合并
-                messageGroups.forEach((chunks, messageId) => {
+                messageGroups.forEach((chunks, dialougeId) => {
                     const mergedMessage = {
                         ...chunks[0],
-                        text: chunks.map(c => c.text).join(''),
-                        message_type: 'text'
+                        content: chunks.map(c => c.content).join(''),
+                        role: 'assistant'
                     }
 
                     // 替换之前的临时版本
                     setArchivedMessages(prev => {
-                        const filtered = prev.filter(m => m.message_id !== `temp_${messageId}`)
+                        const filtered = prev.filter(m => m.dialouge_id !== `temp_${dialougeId}`)
                         return [...filtered, {
                             ...mergedMessage,
-                            message_type: 'text' as const // 使用字面量类型
+                            role: 'assistant' as const // 使用字面量类型
                         }]
                     })
 
                     // 清理活动消息引用
-                    activeMessagesRef.current.delete(messageId)
+                    activeMessagesRef.current.delete(dialougeId)
                 })
 
                 return [] // 清空lastChunks
@@ -245,8 +248,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    imitator: 'QWEN',
-                    model: 'qwen-plus',
+                    model: 'gpt-4o-mini',
                     thread_id: currentThreadId,
                     messages: [{ role: 'user', content }]
                 }),
@@ -267,9 +269,20 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
                             mergeAndClearChunks()
                             return
                         }
-                        const message: Message = JSON.parse(event.data)
 
-                        if (message.message_type === 'text_chunk') {
+                        // 解析原始数据
+                        const data = JSON.parse(event.data)
+
+                        // 转换为统一的Message格式
+                        const message: Message = {
+                            role: 'assistant',
+                            content: data.output_text || data.content || '',
+                            created_at: data.created_at,
+                            dialouge_id: data.dialouge_id
+                        }
+
+                        // 处理AI增量消息块
+                        if (data.chunk_type === 'ai_delta') {
                             console.log('收到文本块:', message)
 
                             // 添加到lastChunks用于最终的完整合并
@@ -277,7 +290,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
                             // 同时处理实时更新
                             updateActiveMessage(message)
-                        } else if (message.message_type === 'text') {
+                        } else {
                             console.log('收到完整消息:', message)
                             mergeAndClearChunks() // 先合并之前的chunks
                             setPendingMessages(prev => [...prev, message]) // 添加完整消息
@@ -305,37 +318,48 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
     // 新增实时更新函数
     const updateActiveMessage = (chunk: Message) => {
-        const messageId = chunk.message_id
+        const dialougeId = chunk.dialouge_id
 
-        // 检查是否已有这个message_id的活动消息
-        if (!activeMessagesRef.current.has(messageId)) {
-            // 首次收到此message_id，创建新的活动消息
-            activeMessagesRef.current.set(messageId, {
+        // 检查是否已有这个dialouge_id的活动消息
+        if (!activeMessagesRef.current.has(dialougeId)) {
+            // 首次收到此dialouge_id，创建新的活动消息
+            const newMessage: Message = {
                 ...chunk,
-                message_type: 'text', // 转为完整消息类型
-                text: chunk.text // 初始内容
+                role: 'assistant', // 转为助手角色
+                content: chunk.content // 初始内容
+            }
+            activeMessagesRef.current.set(dialougeId, newMessage)
+
+            // 立即添加到界面显示
+            setArchivedMessages(prev => {
+                // 确认消息不存在才添加（避免重复）
+                if (!prev.some(m => m.dialouge_id === `temp_${dialougeId}`)) {
+                    return [...prev, {
+                        ...newMessage,
+                        dialouge_id: `temp_${dialougeId}` // 使用临时ID
+                    } as Message]
+                }
+                return prev
             })
         } else {
-            // 已有此message_id，更新内容
-            const currentMessage = activeMessagesRef.current.get(messageId)!
-            activeMessagesRef.current.set(messageId, {
+            // 已有此dialouge_id，更新内容
+            const currentMessage = activeMessagesRef.current.get(dialougeId)!
+            const updatedMessage: Message = {
                 ...currentMessage,
-                text: currentMessage.text + chunk.text,
-                completed_at: chunk.completed_at // 更新完成时间
+                content: currentMessage.content + chunk.content,
+                created_at: chunk.created_at // 更新创建时间
+            }
+            activeMessagesRef.current.set(dialougeId, updatedMessage)
+
+            // 更新UI
+            setArchivedMessages(prev => {
+                return prev.map(m =>
+                    m.dialouge_id === `temp_${dialougeId}`
+                        ? { ...updatedMessage, dialouge_id: `temp_${dialougeId}` } as Message
+                        : m
+                )
             })
         }
-
-        // 更新UI（使用临时ID避免冲突）
-        setArchivedMessages(prev => {
-            // 移除之前的临时版本
-            const filtered = prev.filter(m => m.message_id !== `temp_${messageId}`)
-
-            // 添加更新后的版本
-            return [...filtered, {
-                ...activeMessagesRef.current.get(messageId)!,
-                message_id: `temp_${messageId}` // 使用临时ID
-            }]
-        })
     }
 
     // 切换收藏状态

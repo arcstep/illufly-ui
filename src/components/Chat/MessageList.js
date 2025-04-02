@@ -50,7 +50,7 @@ export default function MessageList() {
 
     const handleShareMessages = () => {
         const selectedMessages = messages.filter((message) =>
-            selectedMessageIds.includes(message.id)
+            selectedMessageIds.includes(message.dialouge_id)
         );
         console.log('分享消息:', selectedMessages);
     };
@@ -65,18 +65,18 @@ export default function MessageList() {
                 <ul className="space-y-4">
                     {messages.map((message) => (
                         <li
-                            key={message.message_id}
+                            key={message.dialouge_id}
                             className={`flex gap-3 group relative p-4 rounded-lg shadow-sm bg-white 
-                                ${selectedMessageIds.includes(message.message_id) ? 'border-2 border-blue-500' : 'border border-gray-200'}`}
+                                ${selectedMessageIds.includes(message.dialouge_id) ? 'border-2 border-blue-500' : 'border border-gray-200'}`}
                         >
                             <div className="w-8 flex-shrink-0">
                                 <button
                                     className={`cursor-pointer w-6 h-6 rounded-full flex items-center justify-center 
-                                        ${selectedMessageIds.includes(message.message_id)
+                                        ${selectedMessageIds.includes(message.dialouge_id)
                                             ? 'bg-blue-500 text-white'
                                             : 'bg-gray-200 text-gray-400 opacity-0 group-hover:opacity-100'} 
                                         transition-opacity duration-200`}
-                                    onClick={() => handleSelectMessage(message.message_id)}
+                                    onClick={() => handleSelectMessage(message.dialouge_id)}
                                     title="选择消息"
                                 >
                                     <FontAwesomeIcon icon={faCheck} className="text-sm" />
@@ -85,24 +85,24 @@ export default function MessageList() {
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-2">
                                     <span className="font-medium text-gray-700">
-                                        {emoji_icons[message.role] + ' ' + message.service_name}
+                                        {emoji_icons[message.role]}
                                     </span>
                                     <span className="inline-block bg-blue-100 text-blue-800 text-xs rounded-full px-2 py-0.5">
-                                        {message.message_type.toUpperCase()}
+                                        {message.role.toUpperCase()}
                                     </span>
                                     {message.favorite && (
                                         <span className="text-yellow-500">
                                             <FontAwesomeIcon icon={faStar} className="text-sm" />
                                         </span>
                                     )}
-                                    <CopyButton content={message.text} />
+                                    <CopyButton content={message.content} />
                                     <span className="text-xs text-gray-400 ml-auto">
-                                        {new Date(message.completed_at * 1000).toLocaleString()}
+                                        {new Date(message.created_at * 1000).toLocaleString()}
                                     </span>
                                 </div>
                                 <div className="text-gray-800">
                                     <MarkdownRenderer
-                                        content={message.text}
+                                        content={message.content}
                                         className="prose prose-sm max-w-none"
                                     />
                                 </div>

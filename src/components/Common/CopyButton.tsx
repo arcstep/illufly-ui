@@ -2,7 +2,15 @@ import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCopy, faSpinner } from '@fortawesome/free-solid-svg-icons';
 
-export default function CopyButton({ content, getContent }: { content: string, getContent?: () => Promise<string> }) {
+export default function CopyButton({
+    content,
+    getContent,
+    iconClassName = "text-gray-400 hover:text-gray-600"
+}: {
+    content: string,
+    getContent?: () => Promise<string>,
+    iconClassName?: string
+}) {
     const [copySuccess, setCopySuccess] = useState({ show: false, position: { x: 0, y: 0 } });
     const [isLoading, setIsLoading] = useState(false);
 
@@ -36,7 +44,7 @@ export default function CopyButton({ content, getContent }: { content: string, g
     return (
         <>
             <button
-                className="ml-2 text-gray-400 hover:text-gray-600 focus:text-gray-800 transition-colors duration-200"
+                className={`ml-2 focus:text-gray-800 transition-colors duration-200 ${iconClassName}`}
                 onClick={handleCopy}
                 title="复制内容"
                 disabled={isLoading}

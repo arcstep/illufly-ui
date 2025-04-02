@@ -40,8 +40,20 @@ export function ApikeysProvider({ children }: { children: React.ReactNode }) {
     const [apikeys, setApikeys] = useState<Apikey[]>([])
     const [imitators, setImitators] = useState<string[]>([])
 
+    useEffect(() => {
+        // 只在客户端执行
+        if (typeof window === 'undefined') return;
+
+        // 优先获取imitators列表
+        listImitators().then(() => {
+            // 然后获取apikeys列表
+            listApikeys();
+        });
+    }, []);
+
     const listImitators = async () => {
         try {
+            setIsLoading(true)
             const api_url = `${API_BASE_URL}/imitators`
             const res = await fetch(api_url, {
                 method: 'GET',
@@ -71,19 +83,10 @@ export function ApikeysProvider({ children }: { children: React.ReactNode }) {
             console.error('获取imitators出错:', error)
             // 设置默认值
             setImitators(['OPENAI', 'QWEN', 'ZHIPU'])
+        } finally {
+            setIsLoading(false)
         }
     }
-
-    useEffect(() => {
-        // 只在客户端执行
-        if (typeof window === 'undefined') return;
-
-        // 优先获取imitators列表
-        listImitators().then(() => {
-            // 然后获取apikeys列表
-            listApikeys();
-        });
-    }, []);
 
     const createApikey = async (description: string, imitator: string): Promise<string> => {
         const api_url = `${API_BASE_URL}/apikeys`

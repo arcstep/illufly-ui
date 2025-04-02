@@ -27,7 +27,7 @@ const customSchema = {
 
 export default function MarkdownRenderer({ content, className = '' }) {
     const CustomTag = ({ tagName, ...props }) => (
-        <div className="relative border border-blue-300 p-4 my-4 rounded-md bg-blue-50">
+        <div>
             <span className="absolute top-0 left-2 bg-white px-2 text-xs text-blue-500 border border-blue-300 rounded -mt-2.5">
                 {tagName}
             </span>
@@ -36,7 +36,7 @@ export default function MarkdownRenderer({ content, className = '' }) {
     );
 
     return (
-        <div className={`prose prose-sm max-w-none ${className} bg-gray-100 p-2 rounded-lg shadow-md`}>
+        <div className={`prose prose-sm max-w-none ${className}`}>
             <ReactMarkdown
                 remarkPlugins={[
                     remarkGfm,

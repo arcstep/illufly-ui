@@ -2,6 +2,7 @@
 
 import { Suspense } from 'react'
 import { AuthProvider, useAuth } from '@/context/AuthContext'
+import { SettingsProvider } from '@/context/SettingsContext'
 
 import Header from '@/components/Header'
 
@@ -31,9 +32,11 @@ export default function ChatLayout({
     return (
         <Suspense fallback={<div>Auth Loading...</div>}>
             <AuthProvider>
-                <AuthenticatedLayout>
-                    {children}
-                </AuthenticatedLayout>
+                <SettingsProvider>
+                    <AuthenticatedLayout>
+                        {children}
+                    </AuthenticatedLayout>
+                </SettingsProvider>
             </AuthProvider>
         </Suspense>
     )

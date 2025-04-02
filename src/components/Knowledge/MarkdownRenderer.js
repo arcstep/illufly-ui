@@ -8,6 +8,7 @@ import remarkBreaks from 'remark-breaks';
 import remarkEmoji from 'remark-emoji';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
+import { useSettings } from '@/context/SettingsContext';
 
 // 自定义 schema，允许某些标签
 const customSchema = {
@@ -26,6 +27,9 @@ const customSchema = {
 };
 
 export default function MarkdownRenderer({ content, className = '' }) {
+    // 获取设置中的字体大小
+    const { settings } = useSettings();
+
     const CustomTag = ({ tagName, ...props }) => (
         <div>
             <span className="absolute top-0 left-2 bg-white px-2 text-xs text-blue-500 border border-blue-300 rounded -mt-2.5">
@@ -35,8 +39,13 @@ export default function MarkdownRenderer({ content, className = '' }) {
         </div>
     );
 
+    // 创建自定义样式对象，包含动态字体大小
+    const customStyle = {
+        fontSize: `${settings.fontSize}px`
+    };
+
     return (
-        <div className={`prose prose-sm max-w-none ${className}`}>
+        <div className={`prose prose-sm max-w-none ${className}`} style={customStyle}>
             <ReactMarkdown
                 remarkPlugins={[
                     remarkGfm,
@@ -57,10 +66,10 @@ export default function MarkdownRenderer({ content, className = '' }) {
                     context: (props) => <CustomTag tagName="context" {...props} />,
                     knowledge: (props) => <CustomTag tagName="knowledge" {...props} />,
                     OUTLINE: (props) => <CustomTag tagName="OUTLINE" {...props} />,
-                    h1: ({ node, ...props }) => <h1 className="text-3xl font-bold my-4" {...props} />,
-                    h2: ({ node, ...props }) => <h2 className="text-2xl font-semibold my-3" {...props} />,
-                    p: ({ node, ...props }) => <p className="text-base leading-relaxed my-2" {...props} />,
-                    pre: ({ node, ...props }) => <pre className="bg-gray-800 text-white p-4 rounded-md my-4 overflow-x-auto" {...props} />
+                    h1: ({ node, ...props }) => <h1 style={{ fontSize: `${settings.fontSize * 1.8}px` }} className="font-bold my-4" {...props} />,
+                    h2: ({ node, ...props }) => <h2 style={{ fontSize: `${settings.fontSize * 1.5}px` }} className="font-semibold my-3" {...props} />,
+                    p: ({ node, ...props }) => <p className="leading-relaxed my-2" {...props} />,
+                    pre: ({ node, ...props }) => <pre className="bg-gray-800 text-white p-3 rounded-md my-3 overflow-x-auto" style={{ fontSize: `${settings.fontSize * 0.9}px` }} {...props} />
                 }}
             >
                 {content || ''}

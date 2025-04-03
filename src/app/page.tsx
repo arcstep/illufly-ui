@@ -1,11 +1,5 @@
-import { FC } from 'react';
+import { redirect } from 'next/navigation';
 
-const Home: FC = () => {
-    return (
-        <div>
-            <h1>Hello World</h1>
-        </div>
-    );
+export default function Home() {
+    redirect('/chat');
 }
-
-export default Home;

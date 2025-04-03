@@ -17,12 +17,12 @@ export default function Header({
         <header className="flex justify-between items-center fixed top-0 left-0 right-0 z-50 bg-gray-800 text-white p-2">
             <h1 className="text-xl md:text-2xl font-bold">✨🦋 ILLUFLY</h1>
             <div className="flex space-x-4">
-                {['/chat', '/memory', '/apikeys'].map((path) => (
+                {['/chat', '/memory', '/docs'].map((path) => (
                     <Link href={path} key={path}>
                         <span className={`px-3 py-1 rounded-full transition-all duration-300 ${currentPath === path ? 'bg-gradient-to-r from-blue-400 to-purple-400 text-white shadow-md' : 'bg-transparent text-gray-200 hover:bg-gray-600'}`}>
                             {path === '/chat' && '对话'}
                             {path === '/memory' && '记忆'}
-                            {path === '/apikeys' && '模型接口'}
+                            {path === '/docs' && '文档'}
                         </span>
                     </Link>
                 ))}

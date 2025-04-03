@@ -201,6 +201,7 @@ export default function MessageList() {
     const [timeRefresh, setTimeRefresh] = useState(0);
     const [isAtBottom, setIsAtBottom] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
+    const [isWaitingResponse, setIsWaitingResponse] = useState(false);
 
     // 检查是否在底部
     const checkIfAtBottom = () => {
@@ -240,7 +241,7 @@ export default function MessageList() {
         }
     }, []);
 
-    // 当currentThreadId或messages变化时，控制加载状态
+    // 修改消息监控效果，检测是否正在等待服务器响应
     useEffect(() => {
         console.log(`MessageList检测到线程/消息变化: 线程=${currentThreadId}, 消息数量=${messages.length}`);
 
@@ -248,25 +249,40 @@ export default function MessageList() {
             // 先显示加载状态
             setIsLoading(true);
 
-            // 设置一个短超时，用于区分"正在加载"和"线程确实没有消息"的情况
-            const loadingTimeout = setTimeout(() => {
-                // 如果线程ID存在但消息为空，可能是确实没有消息，取消加载状态
-                console.log('初始加载完成，线程ID:', currentThreadId, '消息数量:', messages.length);
+            // 等待短暂延迟以确保所有消息都已加载
+            const timer = setTimeout(() => {
                 setIsLoading(false);
-            }, 500); // 等待500ms，让API有足够时间返回消息
 
-            // 如果有消息，立即取消加载状态
-            if (messages.length > 0) {
-                console.log(`收到 ${messages.length} 条消息，取消加载状态`);
-                setIsLoading(false);
-                clearTimeout(loadingTimeout);
-            }
+                // 检查最新的消息是否来自用户，如果是则显示等待服务器响应状态
+                const userMessages = messages.filter(msg => msg.role === 'user');
+                const assistantMessages = messages.filter(msg => msg.role === 'assistant');
 
-            return () => clearTimeout(loadingTimeout);
-        } else {
-            setIsLoading(false);
+                if (userMessages.length > 0 && assistantMessages.length > 0) {
+                    const lastUserMsg = userMessages[userMessages.length - 1];
+                    const lastAssistantMsg = assistantMessages[assistantMessages.length - 1];
+
+                    // 如果最新消息是用户的，且这条用户消息的时间戳比最新的助手消息更晚，说明正在等待响应
+                    if (lastUserMsg.created_at > lastAssistantMsg.created_at) {
+                        setIsWaitingResponse(true);
+                    } else {
+                        setIsWaitingResponse(false);
+                    }
+                } else if (userMessages.length > 0 && assistantMessages.length === 0) {
+                    // 如果有用户消息但没有助手消息，也表示正在等待响应
+                    setIsWaitingResponse(true);
+                } else {
+                    setIsWaitingResponse(false);
+                }
+
+                // 滚动到底部
+                setTimeout(() => {
+                    scrollToBottom();
+                }, 100);
+            }, 300);
+
+            return () => clearTimeout(timer);
         }
-    }, [currentThreadId, messages.length]);
+    }, [currentThreadId, messages]);
 
     // 监听消息变化，自动滚动到底部
     useEffect(() => {
@@ -533,16 +549,17 @@ export default function MessageList() {
         return result;
     }, [messages]);
 
+    // 修改等待响应提示组件
+    const ResponseWaitingIndicator = () => (
+        <div className="flex items-center gap-1.5 text-gray-400 text-sm">
+            <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }}></div>
+            <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }}></div>
+            <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }}></div>
+        </div>
+    );
+
     return (
         <div className="h-full flex flex-col relative">
-            {isLoading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
-                    <div className="flex flex-col items-center">
-                        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                        <span className="mt-2 text-blue-500">加载消息中...</span>
-                    </div>
-                </div>
-            )}
             <div
                 ref={scrollContainerRef}
                 className="flex-1 overflow-y-auto p-4"
@@ -632,6 +649,7 @@ export default function MessageList() {
                                 );
                             })
                         }
+                        {isWaitingResponse && <ResponseWaitingIndicator />}
                         <div ref={messagesEndRef} />
                     </ul>
                 )}

@@ -2,6 +2,8 @@ import './globals.css'
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { SettingsProvider } from '@/context/SettingsContext';
+import { AuthProvider } from '@/context/AuthContext';
+import { TTSProvider } from '@/context/TTSContext';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -18,9 +20,13 @@ export default function RootLayout({
     return (
         <html lang="zh" suppressHydrationWarning>
             <body className={`${inter.className} antialiased`}>
-                <SettingsProvider>
-                    {children}
-                </SettingsProvider>
+                <AuthProvider>
+                    <TTSProvider>
+                        <SettingsProvider>
+                            {children}
+                        </SettingsProvider>
+                    </TTSProvider>
+                </AuthProvider>
             </body>
         </html>
     )

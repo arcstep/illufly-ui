@@ -59,7 +59,7 @@ export default function Header({ username, onLogout }: HeaderProps) {
                                     }`}
                             >
                                 <FontAwesomeIcon icon={faBook as IconProp} className="mr-1.5 h-4 w-4" />
-                                文档
+                                阅读
                             </Link>
                         </nav>
                     </div>

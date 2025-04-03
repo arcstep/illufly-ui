@@ -1,55 +1,63 @@
-'use client'
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faPlus, faSpinner } from '@fortawesome/free-solid-svg-icons';
+import { useChat } from '@/context/ChatContext';
 
-import { useChat } from '@/context/ChatContext'
-import { useEffect, useState, useCallback, useRef } from 'react'
+interface Thread {
+    user_id: string;
+    thread_id: string;
+    title: string;
+    created_at: number;
+    dialogue_count?: number;
+}
 
 export default function HistoryList() {
-    const { threads, loadAllThreads, switchThread, createNewThread, currentThreadId } = useChat()
-    const [loading, setLoading] = useState(false)
-    const [initialized, setInitialized] = useState(false)
-    const [switchingThread, setSwitchingThread] = useState(false)
-    const lastClickedThread = useRef(null)
+    const { threads, currentThreadId, switchThread, createNewThread, loadAllThreads } = useChat();
+    const [loading, setLoading] = useState(false);
+    const [initialized, setInitialized] = useState(false);
+    const [switchingThread, setSwitchingThread] = useState(false);
+    const lastClickedThread = useRef<string | null>(null);
 
     // 加载所有线程
     useEffect(() => {
         const fetchThreads = async () => {
-            if (initialized) return
+            if (initialized) return;
 
-            setLoading(true)
+            setLoading(true);
             try {
-                const loadedThreads = await loadAllThreads()
-                console.log("加载完成，当前线程数:", loadedThreads?.length || 0)
+                const loadedThreads = await loadAllThreads();
+                console.log("加载完成，当前线程数:", loadedThreads?.length || 0);
 
                 // 如果有线程但没有选择当前线程，自动选择第一个
                 if (loadedThreads?.length > 0 && !currentThreadId) {
-                    const firstThread = loadedThreads[0]
-                    console.log("自动选择第一个线程:", firstThread.thread_id)
-                    await switchThread(firstThread.thread_id)
+                    const firstThread = loadedThreads[0];
+                    console.log("自动选择第一个线程:", firstThread.thread_id);
+                    await switchThread(firstThread.thread_id);
                 }
 
-                setInitialized(true)
+                setInitialized(true);
             } catch (error) {
-                console.error('加载历史记录失败:', error)
+                console.error('加载历史记录失败:', error);
             } finally {
-                setLoading(false)
+                setLoading(false);
             }
-        }
-        fetchThreads()
-    }, [loadAllThreads, currentThreadId, initialized])
+        };
+        fetchThreads();
+    }, [loadAllThreads, currentThreadId, initialized]);
 
     // 添加一个副作用来监听线程和当前线程ID的变化
     useEffect(() => {
-        console.log("线程列表更新:", threads.length, "当前线程:", currentThreadId)
+        console.log("线程列表更新:", threads.length, "当前线程:", currentThreadId);
 
         // 切换完成后重置状态
         if (switchingThread && lastClickedThread.current === currentThreadId) {
-            setSwitchingThread(false)
-            lastClickedThread.current = null
+            setSwitchingThread(false);
+            lastClickedThread.current = null;
         }
-    }, [threads, currentThreadId, switchingThread])
+    }, [threads, currentThreadId, switchingThread]);
 
     // 处理线程切换，使用useCallback确保函数不会重复创建
-    const handleSwitchThread = useCallback(async (threadId) => {
+    const handleSwitchThread = useCallback(async (threadId: string) => {
         console.log("====== 尝试切换线程 ======");
         console.log("- 目标线程:", threadId);
         console.log("- 当前线程:", currentThreadId);
@@ -103,31 +111,31 @@ export default function HistoryList() {
     // 创建新对话并立即切换
     const handleCreateThread = useCallback(async () => {
         if (switchingThread) {
-            console.log("忽略创建新线程请求: 正在切换中")
-            return
+            console.log("忽略创建新线程请求: 正在切换中");
+            return;
         }
 
-        setSwitchingThread(true)
+        setSwitchingThread(true);
         try {
-            const newThreadId = await createNewThread()
-            console.log("创建了新线程:", newThreadId)
+            const newThreadId = await createNewThread();
+            console.log("创建了新线程:", newThreadId);
             if (newThreadId) {
-                lastClickedThread.current = newThreadId
+                lastClickedThread.current = newThreadId;
 
                 // 创建新线程后直接设置，无需再调用switchThread
                 // 因为createNewThread已经设置了currentThreadId
                 setTimeout(() => {
-                    setSwitchingThread(false)
-                    lastClickedThread.current = null
-                }, 300)
+                    setSwitchingThread(false);
+                    lastClickedThread.current = null;
+                }, 300);
             } else {
-                setSwitchingThread(false)
+                setSwitchingThread(false);
             }
         } catch (error) {
-            console.error("创建新线程失败:", error)
-            setSwitchingThread(false)
+            console.error("创建新线程失败:", error);
+            setSwitchingThread(false);
         }
-    }, [createNewThread, switchingThread])
+    }, [createNewThread, switchingThread]);
 
     return (
         <div className="w-full max-w-xs p-4 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
@@ -153,7 +161,8 @@ export default function HistoryList() {
                     const isSwitching = switchingThread && lastClickedThread.current === thread_id;
 
                     return (
-                        <div key={thread_id}
+                        <div
+                            key={thread_id}
                             className={`border-b border-gray-200 dark:border-gray-700 
                             ${isActive
                                     ? 'border-l-4 border-l-blue-500 dark:border-l-blue-400 bg-blue-50 dark:bg-blue-900/30'
@@ -177,5 +186,5 @@ export default function HistoryList() {
                 })
             )}
         </div>
-    )
-}
+    );
+} 

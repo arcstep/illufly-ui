@@ -102,7 +102,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 console.log('响应不成功，重定向到登录页')
                 setIsAuthenticated(false)
                 if (typeof window !== 'undefined') {
-                    router.replace('/login')
+                    // 获取当前页面路径作为from参数
+                    const currentPath = window.location.pathname
+                    // 检查当前路径是否已经是登录页面或者在无需授权列表中
+                    if (!noAuthPaths.includes(currentPath)) {
+                        router.replace(`/login?from=${encodeURIComponent(currentPath)}`)
+                    } else {
+                        router.replace('/login')
+                    }
                 }
             }
         } catch (error) {
@@ -113,7 +120,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             })
             setIsAuthenticated(false)
             if (typeof window !== 'undefined') {
-                router.replace('/login')
+                // 获取当前页面路径作为from参数
+                const currentPath = window.location.pathname
+                // 检查当前路径是否已经是登录页面或者在无需授权列表中
+                if (!noAuthPaths.includes(currentPath)) {
+                    router.replace(`/login?from=${encodeURIComponent(currentPath)}`)
+                } else {
+                    router.replace('/login')
+                }
             }
         } finally {
             setIsLoading(false)

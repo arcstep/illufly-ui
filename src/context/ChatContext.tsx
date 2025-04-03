@@ -3,6 +3,7 @@
 import { createContext, useState, useContext, useMemo, useEffect, useRef } from 'react'
 import { API_BASE_URL } from '@/utils/config'
 import { fetchEventSource } from '@microsoft/fetch-event-source'
+import { handleAuthError, handleApiError } from '@/utils/handleApiError'
 
 // 基础消息类型
 export interface Message {
@@ -10,6 +11,17 @@ export interface Message {
     content: string
     created_at: number
     dialouge_id: string
+    // 新增字段，用于区分不同类型的消息块
+    chunk_type?: 'ai_delta' | 'memory_retrieve' | 'memory_extract' | 'kg_retrieve' | 'search_results'
+    // 记忆相关信息
+    memory?: {
+        user_id: string
+        topic: string
+        question_hash: string
+        question: string
+        answer: string
+        created_at: number
+    }
 }
 
 // 线程
@@ -142,17 +154,31 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
     // 创建新对话
     const createNewThread = async () => {
-        const res = await fetch(`${API_BASE_URL}/chat/threads`, {
-            method: 'POST',
-            credentials: 'include'
-        })
-        const newThread = await res.json()
-        setCurrentThreadId(newThread.thread_id)
-        setThreads([...threads, newThread])
-        setArchivedMessages([])
-        setLastChunks([])
-        await loadAllThreads()
-        return newThread.thread_id
+        try {
+            const res = await fetch(`${API_BASE_URL}/chat/threads`, {
+                method: 'POST',
+                credentials: 'include'
+            })
+
+            // 检查登录状态
+            if (handleAuthError(res.status)) {
+                return '' // 已处理认证错误，返回空字符串表示失败
+            }
+
+            const newThread = await res.json()
+            setCurrentThreadId(newThread.thread_id)
+            setThreads([...threads, newThread])
+            setArchivedMessages([])
+            setLastChunks([])
+            await loadAllThreads()
+            return newThread.thread_id
+        } catch (error) {
+            // 使用通用错误处理函数
+            if (handleApiError(error, '创建新对话失败')) {
+                return '' // 已处理特殊错误，返回空字符串表示失败
+            }
+            throw error // 其他错误继续抛出
+        }
     }
 
     // 切换当前线程，从后端加载对话消息
@@ -160,12 +186,25 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         const allThreads = threads.map(thread => thread.thread_id)
         if (allThreads.includes(threadId)) {
             setCurrentThreadId(threadId)
-            const res = await fetch(`${API_BASE_URL}/chat/thread/${threadId}/messages`, {
-                credentials: 'include'
-            })
-            const histMessages = await res.json()
-            console.log('加载远程对话消息数据', histMessages)
-            setArchivedMessages(histMessages || [])
+            try {
+                const res = await fetch(`${API_BASE_URL}/chat/thread/${threadId}/messages`, {
+                    credentials: 'include'
+                })
+
+                // 检查登录状态
+                if (handleAuthError(res.status)) {
+                    return // 已处理认证错误
+                }
+
+                const histMessages = await res.json()
+                console.log('加载远程对话消息数据', histMessages)
+                setArchivedMessages(histMessages || [])
+            } catch (error) {
+                // 使用通用错误处理函数
+                if (!handleApiError(error, '切换线程失败')) {
+                    throw error // 其他错误继续抛出
+                }
+            }
         }
     }
 
@@ -175,12 +214,20 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
             const res = await fetch(`${API_BASE_URL}/chat/threads`, {
                 credentials: 'include'
             })
+
+            // 检查登录状态
+            if (handleAuthError(res.status)) {
+                return // 已处理认证错误
+            }
+
             const threads = await res.json()
             setThreads(threads)
             console.log('收到的线程数据:', threads)
         } catch (error) {
-            console.error('加载线程失败:', error)
-            throw error
+            // 使用通用错误处理函数
+            if (!handleApiError(error, '加载线程失败')) {
+                throw error // 其他错误继续抛出
+            }
         }
     }
 
@@ -254,6 +301,11 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
                 }),
                 signal: abortController.signal,
                 onopen: async (response) => {
+                    // 检查登录状态
+                    if (handleAuthError(response.status)) {
+                        throw new Error('认证错误已处理')
+                    }
+
                     if (response.status !== 200 || !response.ok) {
                         throw new Error(`请求失败: ${response.status}`)
                     }
@@ -273,16 +325,17 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
                         // 解析原始数据
                         const data = JSON.parse(event.data)
 
-                        // 转换为统一的Message格式
-                        const message: Message = {
-                            role: 'assistant',
-                            content: data.output_text || data.content || '',
-                            created_at: data.created_at,
-                            dialouge_id: data.dialouge_id
-                        }
-
                         // 处理AI增量消息块
                         if (data.chunk_type === 'ai_delta') {
+                            // 转换为统一的Message格式
+                            const message: Message = {
+                                role: 'assistant',
+                                content: data.output_text || '',
+                                created_at: data.created_at,
+                                dialouge_id: data.dialouge_id,
+                                chunk_type: 'ai_delta'
+                            }
+
                             console.log('收到文本块:', message)
 
                             // 添加到lastChunks用于最终的完整合并
@@ -290,9 +343,35 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
                             // 同时处理实时更新
                             updateActiveMessage(message)
-                        } else {
-                            console.log('收到完整消息:', message)
+                        }
+                        // 处理记忆检索消息
+                        else if (data.chunk_type === 'memory_retrieve' || data.chunk_type === 'memory_extract') {
+                            const message: Message = {
+                                role: 'assistant',
+                                content: '', // 内容将在UI中从memory对象生成
+                                created_at: data.created_at,
+                                dialouge_id: data.dialouge_id,
+                                chunk_type: data.chunk_type,
+                                memory: data.memory
+                            }
+
+                            console.log(`收到${data.chunk_type}:`, message)
+                            setPendingMessages(prev => [...prev, message])
+                        }
+                        // 处理其他类型的消息
+                        else {
+                            console.log('收到完整消息:', data)
                             mergeAndClearChunks() // 先合并之前的chunks
+
+                            // 转换为统一的Message格式
+                            const message: Message = {
+                                role: 'assistant',
+                                content: data.output_text || data.content || '',
+                                created_at: data.created_at,
+                                dialouge_id: data.dialouge_id,
+                                chunk_type: data.chunk_type
+                            }
+
                             setPendingMessages(prev => [...prev, message]) // 添加完整消息
                         }
                     } catch (e) {
@@ -309,8 +388,13 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
                 },
             })
         } catch (error) {
-            console.error('发送消息失败:', error)
-            throw error
+            // 使用通用错误处理函数
+            if (!handleApiError(error, '发送消息失败')) {
+                // 不是特殊错误，或未被处理的错误
+                if (!(error instanceof Error && error.message === '认证错误已处理')) {
+                    throw error
+                }
+            }
         } finally {
             abortController.abort()
         }
@@ -364,12 +448,25 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
     // 切换收藏状态
     const toggleFavorite = async (requestId: string) => {
-        const res = await fetch(`${API_BASE_URL}/chat/messages/${requestId}/favorite`, {
-            method: 'POST',
-            credentials: 'include'
-        })
+        try {
+            const res = await fetch(`${API_BASE_URL}/chat/messages/${requestId}/favorite`, {
+                method: 'POST',
+                credentials: 'include'
+            })
 
-        if (res.ok) {
+            // 检查登录状态
+            if (handleAuthError(res.status)) {
+                return // 已处理认证错误
+            }
+
+            if (res.ok) {
+                // 更新收藏状态的逻辑可以在这里添加
+            }
+        } catch (error) {
+            // 使用通用错误处理函数
+            if (!handleApiError(error, '切换收藏状态失败')) {
+                throw error // 其他错误继续抛出
+            }
         }
     }
 

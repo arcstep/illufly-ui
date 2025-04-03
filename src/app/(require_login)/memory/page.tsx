@@ -18,20 +18,46 @@ function TopicCard({ topic, memories, isExpanded, onToggle }: { topic: string, m
     const count = memories.length;
 
     return (
-        <div
-            className={`mb-4 p-4 rounded-lg shadow-md transition-all cursor-pointer border-l-4 ${isExpanded ? 'bg-blue-50 border-blue-500' : 'bg-white hover:bg-gray-50 border-transparent'}`}
-            onClick={onToggle}
-            style={{ fontSize: `${settings.fontSize}px` }}
-        >
-            <div className="flex justify-between items-start">
-                <div className="flex items-center">
-                    <h3 className="text-lg font-semibold">{topic}</h3>
-                    <span className="ml-2 text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full">
-                        {count} 条记忆
-                    </span>
+        <div className="rounded-lg shadow-sm transition-all overflow-hidden h-full">
+            {/* 卡片头部 */}
+            <div
+                className={`p-4 cursor-pointer ${isExpanded ? 'bg-blue-50 border-l-4 border-blue-500' : 'bg-white hover:bg-gray-50 border-l-4 border-transparent'}`}
+                onClick={onToggle}
+                style={{ fontSize: `${settings.fontSize}px` }}
+            >
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center">
+                        <h3 className="text-lg font-semibold">{topic}</h3>
+                        <span className="ml-2 text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full">
+                            {count} 条记忆
+                        </span>
+                    </div>
+                    <div className="flex items-center">
+                        <span className="text-sm text-gray-500 mr-2">{format(topicDate, 'yyyy-MM-dd HH:mm')}</span>
+                        <svg
+                            className={`w-4 h-4 text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
                 </div>
-                <span className="text-sm text-gray-500">{format(topicDate, 'yyyy-MM-dd HH:mm')}</span>
             </div>
+
+            {/* 卡片展开内容 */}
+            {isExpanded && (
+                <div className="bg-gray-50 px-3 py-2 animate-fadeIn border-t border-gray-200">
+                    {memories.map(memory => (
+                        <MemoryCard
+                            key={memory.question_hash}
+                            memory={memory}
+                        />
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
@@ -43,10 +69,10 @@ function MemoryCard({ memory }: { memory: any }) {
 
     return (
         <div
-            className="bg-white p-4 rounded-lg shadow-sm mb-3 ml-6 border-l-2 border-gray-200"
+            className="bg-white p-3 rounded-lg shadow-sm mb-2 border-l-2 border-gray-200"
             style={{ fontSize: `${settings.fontSize}px` }}
         >
-            <div className="mb-3">
+            <div className="mb-2">
                 <span className="font-medium text-gray-800">问：</span>
                 <span className="text-gray-700">{memory.question}</span>
             </div>
@@ -100,7 +126,7 @@ function MemoryContent() {
                     暂无记忆，开始对话创建新记忆吧
                 </div>
             ) : (
-                <div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {topics.map(topic => {
                         const topicMemories = topicGroups.get(topic) || [];
                         const isExpanded = expandedTopics.has(topic);
@@ -113,17 +139,6 @@ function MemoryContent() {
                                     isExpanded={isExpanded}
                                     onToggle={() => handleTopicToggle(topic)}
                                 />
-
-                                {isExpanded && (
-                                    <div className="animate-fadeIn">
-                                        {topicMemories.map(memory => (
-                                            <MemoryCard
-                                                key={memory.question_hash}
-                                                memory={memory}
-                                            />
-                                        ))}
-                                    </div>
-                                )}
                             </div>
                         );
                     })}

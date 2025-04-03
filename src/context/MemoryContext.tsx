@@ -6,11 +6,12 @@ import { API_BASE_URL } from '@/utils/config'
 interface MemoryItem {
     user_id: string
     topic: string
-    question_hash: string
+    memory_id: string
     question: string
     answer: string
     created_at: number
     similarity?: number
+    distance?: number
 }
 
 export interface MemoryContextType {
@@ -19,8 +20,8 @@ export interface MemoryContextType {
     topicGroups: Map<string, MemoryItem[]>
     fetchMemories: () => Promise<void>
     updateMemory: (memoryItem: MemoryItem) => Promise<boolean>
-    deleteMemory: (questionHash: string) => Promise<boolean>
-    searchMemories: (query: string) => Promise<MemoryItem[]>
+    deleteMemory: (memoryId: string) => Promise<boolean>
+    searchMemories: (query: string, threshold?: number, top_k?: number) => Promise<MemoryItem[]>
     isSearching: boolean
 }
 
@@ -97,7 +98,7 @@ export function MemoryProvider({ children }: { children: React.ReactNode }) {
     // 更新记忆
     const updateMemory = async (memoryItem: MemoryItem): Promise<boolean> => {
         try {
-            const api_url = `${API_BASE_URL}/memory/${memoryItem.question_hash}`
+            const api_url = `${API_BASE_URL}/memory/${memoryItem.memory_id}`
             const res = await fetch(api_url, {
                 method: 'PUT',
                 credentials: 'include',
@@ -114,7 +115,7 @@ export function MemoryProvider({ children }: { children: React.ReactNode }) {
             if (res.ok) {
                 // 更新本地状态
                 setMemories(prev => prev.map(item =>
-                    item.question_hash === memoryItem.question_hash ? memoryItem : item
+                    item.memory_id === memoryItem.memory_id ? memoryItem : item
                 ))
                 return true
             } else {
@@ -128,9 +129,9 @@ export function MemoryProvider({ children }: { children: React.ReactNode }) {
     }
 
     // 删除记忆
-    const deleteMemory = async (questionHash: string): Promise<boolean> => {
+    const deleteMemory = async (memoryId: string): Promise<boolean> => {
         try {
-            const api_url = `${API_BASE_URL}/memory/${questionHash}`
+            const api_url = `${API_BASE_URL}/memory/${memoryId}`
             const res = await fetch(api_url, {
                 method: 'DELETE',
                 credentials: 'include',
@@ -138,7 +139,7 @@ export function MemoryProvider({ children }: { children: React.ReactNode }) {
 
             if (res.ok) {
                 // 更新本地状态
-                setMemories(prev => prev.filter(item => item.question_hash !== questionHash))
+                setMemories(prev => prev.filter(item => item.memory_id !== memoryId))
                 return true
             } else {
                 console.error('删除记忆失败', res.status)
@@ -151,7 +152,7 @@ export function MemoryProvider({ children }: { children: React.ReactNode }) {
     }
 
     // 搜索记忆
-    const searchMemories = async (query: string): Promise<MemoryItem[]> => {
+    const searchMemories = async (query: string, threshold: number = 1.0, top_k: number = 15): Promise<MemoryItem[]> => {
         if (!query.trim()) {
             return []
         }
@@ -165,7 +166,11 @@ export function MemoryProvider({ children }: { children: React.ReactNode }) {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ query })
+                body: JSON.stringify({
+                    query,
+                    threshold,
+                    top_k
+                })
             })
 
             if (res.ok) {

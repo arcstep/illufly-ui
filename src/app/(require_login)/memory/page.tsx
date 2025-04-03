@@ -191,7 +191,7 @@ function TopicCard({ topic, memories, isExpanded, onToggle }: { topic: string, m
                 <div className="bg-gray-50 px-3 py-2 animate-fadeIn border-t border-gray-200">
                     {memories.map(memory => (
                         <MemoryCard
-                            key={memory.question_hash}
+                            key={memory.memory_id}
                             memory={memory}
                         />
                     ))}
@@ -232,7 +232,7 @@ function MemoryCard({ memory }: { memory: any }) {
 
     const handleConfirmDelete = async () => {
         setIsDeleting(true);
-        const success = await deleteMemory(memory.question_hash);
+        const success = await deleteMemory(memory.memory_id);
         setIsDeleting(false);
 
         if (success) {
@@ -251,10 +251,10 @@ function MemoryCard({ memory }: { memory: any }) {
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
-            {/* 如果存在相似度信息，显示相似度 */}
-            {memory.similarity !== undefined && (
-                <div className="absolute top-0 right-0 bg-blue-100 text-blue-800 text-xs px-2 py-1 m-1 rounded-full">
-                    相似度: {(memory.similarity * 100).toFixed(2)}%
+            {/* 显示距离信息（优先） */}
+            {memory.distance !== undefined && memory.distance != null && (
+                <div className="absolute top-0 right-0 bg-green-100 text-green-800 text-xs px-2 py-1 m-1 rounded-full">
+                    距离: {memory.distance.toFixed(3)}
                 </div>
             )}
 
@@ -326,7 +326,7 @@ function SearchResults({ results, onClearSearch }: { results: any[], onClearSear
                 <div className="space-y-3">
                     {results.map((memory) => (
                         <MemoryCard
-                            key={memory.question_hash}
+                            key={memory.memory_id}
                             memory={memory}
                         />
                     ))}
@@ -343,6 +343,9 @@ function MemoryContent() {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [hasSearched, setHasSearched] = useState(false);
+    const [threshold, setThreshold] = useState(1.5);
+    const [topK, setTopK] = useState(15);
+    const [showAdvanced, setShowAdvanced] = useState(false);
 
     useEffect(() => {
         changeCurrentPath('/memory');
@@ -365,7 +368,7 @@ function MemoryContent() {
         e.preventDefault();
         if (!searchQuery.trim()) return;
 
-        const results = await searchMemories(searchQuery);
+        const results = await searchMemories(searchQuery, threshold, topK);
         setSearchResults(results);
         setHasSearched(true);
     };
@@ -433,6 +436,58 @@ function MemoryContent() {
                             )}
                         </button>
                     </div>
+
+                    {/* 高级搜索选项切换按钮 */}
+                    <div className="flex justify-end mt-1">
+                        <button
+                            type="button"
+                            onClick={() => setShowAdvanced(!showAdvanced)}
+                            className="text-xs text-gray-500 hover:text-gray-700 focus:outline-none"
+                        >
+                            {showAdvanced ? '隐藏高级选项' : '显示高级选项'}
+                        </button>
+                    </div>
+
+                    {/* 高级搜索选项 */}
+                    {showAdvanced && (
+                        <div className="mt-2 grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                            <div>
+                                <label className="block text-xs text-gray-600 mb-1">
+                                    距离阈值 (0.1-2.0)
+                                    <span className="ml-1 text-gray-400">小值=更相似</span>
+                                </label>
+                                <div className="flex items-center">
+                                    <input
+                                        type="range"
+                                        min="0.1"
+                                        max="2.0"
+                                        step="0.1"
+                                        value={threshold}
+                                        onChange={(e) => setThreshold(parseFloat(e.target.value))}
+                                        className="w-full mr-2"
+                                    />
+                                    <span className="text-xs w-10 text-center bg-white px-1 py-0.5 rounded border">{threshold}</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-600 mb-1">
+                                    结果数量 (1-50)
+                                </label>
+                                <div className="flex items-center">
+                                    <input
+                                        type="range"
+                                        min="1"
+                                        max="50"
+                                        step="1"
+                                        value={topK}
+                                        onChange={(e) => setTopK(parseInt(e.target.value))}
+                                        className="w-full mr-2"
+                                    />
+                                    <span className="text-xs w-10 text-center bg-white px-1 py-0.5 rounded border">{topK}</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </form>
             </div>
 

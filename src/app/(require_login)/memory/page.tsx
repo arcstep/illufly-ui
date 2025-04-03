@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useMemory, MemoryProvider } from '@/context/MemoryContext';
 import { format } from 'date-fns';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useSettings } from '@/context/SettingsContext';
 
 // 记忆话题卡片组件
@@ -89,7 +88,7 @@ function MemoryCard({ memory }: { memory: any }) {
 
 function MemoryContent() {
     const { changeCurrentPath } = useAuth();
-    const { memories, isLoading, topicGroups, fetchMemories } = useMemory();
+    const { isLoading, topicGroups, fetchMemories } = useMemory();
     const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set());
 
     useEffect(() => {

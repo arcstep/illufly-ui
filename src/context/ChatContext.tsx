@@ -11,8 +11,8 @@ export interface Message {
     content: string
     created_at: number
     dialouge_id: string
-    // 新增字段，用于区分不同类型的消息块
-    chunk_type?: 'ai_delta' | 'memory_retrieve' | 'memory_extract' | 'kg_retrieve' | 'search_results'
+    // 消息类型字段，用于区分不同类型的消息块
+    chunk_type?: 'ai_delta' | 'ai_message' | 'memory_retrieve' | 'memory_extract' | 'kg_retrieve' | 'search_results' | 'tool_result' | 'title_update'
     // 记忆相关信息
     memory?: {
         user_id: string
@@ -22,6 +22,16 @@ export interface Message {
         answer: string
         created_at: number
     }
+    // 工具调用信息
+    tool_calls?: Array<{
+        tool_id: string
+        name: string
+        arguments: string
+    }>
+    // 工具相关字段
+    name?: string
+    tool_call_id?: string
+    output_text?: string
 }
 
 // 线程
@@ -198,7 +208,17 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
                 const histMessages = await res.json()
                 console.log('加载远程对话消息数据', histMessages)
-                setArchivedMessages(histMessages || [])
+
+                // 处理历史消息中的记忆对象
+                const processedMessages = histMessages.map((msg: any) => {
+                    // 如果有memory字段，确保memory对象完整
+                    if (msg.memory) {
+                        console.log('处理带记忆的消息:', msg);
+                    }
+                    return msg;
+                });
+
+                setArchivedMessages(processedMessages || [])
             } catch (error) {
                 // 使用通用错误处理函数
                 if (!handleApiError(error, '切换线程失败')) {
@@ -358,6 +378,34 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
                             console.log(`收到${data.chunk_type}:`, message)
                             setPendingMessages(prev => [...prev, message])
                         }
+                        // 处理知识库检索和搜索结果
+                        else if (data.chunk_type === 'kg_retrieve' || data.chunk_type === 'search_results') {
+                            const message: Message = {
+                                role: 'assistant',
+                                content: data.output_text || data.content || '',
+                                created_at: data.created_at,
+                                dialouge_id: data.dialouge_id,
+                                chunk_type: data.chunk_type
+                            }
+
+                            console.log(`收到${data.chunk_type}:`, message)
+                            setPendingMessages(prev => [...prev, message])
+                        }
+                        // 处理工具调用结果
+                        else if (data.chunk_type === 'tool_result') {
+                            const message: Message = {
+                                role: 'tool',
+                                name: data.name,
+                                tool_call_id: data.tool_call_id,
+                                content: data.output_text || data.content || '',
+                                created_at: data.created_at,
+                                dialouge_id: data.dialouge_id,
+                                chunk_type: 'tool_result'
+                            }
+
+                            console.log('收到工具调用结果:', message)
+                            setPendingMessages(prev => [...prev, message])
+                        }
                         // 处理其他类型的消息
                         else {
                             console.log('收到完整消息:', data)
@@ -369,7 +417,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
                                 content: data.output_text || data.content || '',
                                 created_at: data.created_at,
                                 dialouge_id: data.dialouge_id,
-                                chunk_type: data.chunk_type
+                                chunk_type: data.chunk_type,
+                                tool_calls: data.tool_calls
                             }
 
                             setPendingMessages(prev => [...prev, message]) // 添加完整消息

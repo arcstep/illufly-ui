@@ -127,17 +127,26 @@ function MemoryGroup({ memories, chunkType }) {
 
             <div className="flex flex-wrap gap-2">
                 {memories.map((memory) => {
+                    // 获取memory对象 - 有些消息直接包含memory，有些消息将memory作为单独的属性
+                    const memoryData = memory.memory || memory;
+
+                    // 检查是否有效的memory数据
+                    if (!memoryData || !memoryData.question_hash) {
+                        console.warn('无效的记忆数据:', memory);
+                        return null;
+                    }
+
                     // 检查是否有展开的记忆项
                     const hasExpandedItems = Object.values(expandedMemories).some(value => value);
                     // 如果有展开的项，则全部卡片变为单列布局，否则保持多列布局
                     const cardWidth = hasExpandedItems ? 'w-full' : 'w-full md:w-[calc(50%-0.5rem)]';
 
                     return (
-                        <div key={memory.memory.question_hash} className={cardWidth}>
+                        <div key={memoryData.question_hash} className={cardWidth}>
                             <MemoryCard
-                                memory={memory.memory}
-                                isCollapsed={!expandedMemories[memory.memory.question_hash]}
-                                toggleCollapse={() => toggleMemory(memory.memory.question_hash)}
+                                memory={memoryData}
+                                isCollapsed={!expandedMemories[memoryData.question_hash]}
+                                toggleCollapse={() => toggleMemory(memoryData.question_hash)}
                             />
                         </div>
                     );
@@ -228,6 +237,7 @@ export default function MessageList() {
 
     // 处理消息分组
     const processedMessages = useMemo(() => {
+        console.log("原始消息列表:", messages);
         // 创建一个新数组存储处理后的消息
         const result = [];
         // 临时存储记忆检索和提取消息
@@ -238,11 +248,26 @@ export default function MessageList() {
             search_results: []
         };
 
+        // 过滤掉content为空的ai_delta消息
+        const filteredMessages = messages.filter(message => {
+            // 如果是ai_delta类型且content为空，则过滤掉
+            if ((message.chunk_type === 'ai_delta' || message.type === 'ai_delta') && (!message.content || message.content === '')) {
+                console.log("过滤掉空的ai_delta消息:", message.dialouge_id);
+                return false;
+            }
+            return true;
+        });
+
         // 遍历所有消息
-        messages.forEach((message, index) => {
+        filteredMessages.forEach((message, index) => {
+            console.log("处理消息:", message, "类型:", message.chunk_type || message.type);
+
+            // 判断消息是否属于记忆相关类型
+            const messageType = message.type || message.chunk_type;
+
             // 如果是记忆相关消息，先收集起来不立即添加
-            if (message.chunk_type && ['memory_retrieve', 'memory_extract', 'kg_retrieve', 'search_results'].includes(message.chunk_type)) {
-                memoryGroups[message.chunk_type].push(message);
+            if (messageType && ['memory_retrieve', 'memory_extract', 'kg_retrieve', 'search_results'].includes(messageType)) {
+                memoryGroups[messageType].push(message);
                 return;
             }
 
@@ -277,6 +302,7 @@ export default function MessageList() {
             }
         }
 
+        console.log("处理后消息列表:", result);
         return result;
     }, [messages]);
 

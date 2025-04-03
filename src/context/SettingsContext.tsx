@@ -59,7 +59,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         <SettingsContext.Provider value={{
             settings,
             updateFontSize,
-            updateTheme,
+            updateTheme
         }}>
             {children}
         </SettingsContext.Provider>

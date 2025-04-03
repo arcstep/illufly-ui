@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPaperclip, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { useChat } from '@/context/ChatContext';
+import { useSettings } from '@/context/SettingsContext';
 
 interface FileItem {
     id: string;
@@ -12,12 +13,21 @@ interface FileItem {
 
 export default function MessageInput() {
     const { ask } = useChat();
+    const { settings } = useSettings();
     const [message, setMessage] = useState<string>('');
     const [files, setFiles] = useState<FileItem[]>([]);
     const [isDragging, setIsDragging] = useState<boolean>(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [showFileUpload, setShowFileUpload] = useState<boolean>(false);
+
+    // 输入框样式，固定字体大小，确保良好的显示效果
+    const textareaStyle = {
+        fontSize: '16px', // 固定字体大小
+        lineHeight: '1.5',
+        scrollbarWidth: 'thin' as const,
+        scrollbarColor: '#cbd5e0 #f7fafc',
+    };
 
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFiles = event.target.files;
@@ -84,12 +94,26 @@ export default function MessageInput() {
         }
     };
 
-    useEffect(() => {
+    // 调整输入框高度
+    const adjustTextareaHeight = () => {
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
-            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+            const newHeight = Math.min(textareaRef.current.scrollHeight, 200);
+            textareaRef.current.style.height = `${newHeight}px`;
         }
+    };
+
+    useEffect(() => {
+        adjustTextareaHeight();
     }, [message]);
+
+    // 监听窗口大小变化，重新调整高度
+    useEffect(() => {
+        window.addEventListener('resize', adjustTextareaHeight);
+        return () => {
+            window.removeEventListener('resize', adjustTextareaHeight);
+        };
+    }, []);
 
     return (
         <form onSubmit={handleSubmit} className="p-4">
@@ -101,8 +125,9 @@ export default function MessageInput() {
                         onChange={(e) => setMessage(e.target.value)}
                         onKeyDown={handleKeyDown}
                         placeholder="输入消息..."
-                        className="w-full min-h-[40px] max-h-[200px] p-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                        className="w-full min-h-[40px] max-h-[200px] p-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 overflow-y-auto"
                         rows={1}
+                        style={textareaStyle}
                     />
                     <button
                         type="button"
@@ -116,6 +141,7 @@ export default function MessageInput() {
                     type="submit"
                     disabled={!message.trim() && files.length === 0}
                     className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors"
+                    style={{ fontSize: '16px' }}
                 >
                     发送
                 </button>

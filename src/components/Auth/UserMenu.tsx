@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef, JSX } from 'react';
 import { useSettings } from '@/context/SettingsContext';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faFont, faSun, faMoon } from '@fortawesome/free-solid-svg-icons';
+import { IconProp } from '@fortawesome/fontawesome-svg-core';
 
 interface UserMenuProps {
     username?: string;
@@ -11,7 +14,7 @@ export default function UserMenu({ username, onLogout }: UserMenuProps): JSX.Ele
     const [isFontSettingVisible, setIsFontSettingVisible] = useState(false);
     const [displayName, setDisplayName] = useState('');
     const menuRef = useRef<HTMLDivElement>(null);
-    const { settings, updateFontSize } = useSettings();
+    const { settings, updateFontSize, updateTheme } = useSettings();
 
     // 限制显示的用户名长度
     useEffect(() => {
@@ -45,33 +48,35 @@ export default function UserMenu({ username, onLogout }: UserMenuProps): JSX.Ele
         setIsFontSettingVisible(!isFontSettingVisible);
     };
 
+    const toggleTheme = () => {
+        updateTheme(settings.theme === 'light' ? 'dark' : 'light');
+    };
+
     return (
         <div className="relative" ref={menuRef}>
             <button
                 onClick={() => setIsUserMenuVisible(!isUserMenuVisible)}
-                className="bg-gray-700 text-white px-2 py-1 rounded hover:bg-gray-600"
-                title={username} // 鼠标悬停时显示完整用户名
+                className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700"
+                title={username}
             >
                 {displayName}
             </button>
             {isUserMenuVisible && (
-                <div
-                    className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded shadow-lg z-50"
-                >
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50">
                     <div
-                        className="px-4 py-2 text-white hover:bg-gray-700 cursor-pointer flex items-center justify-between"
+                        className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer flex items-center justify-between"
                         onClick={toggleFontSetting}
                     >
                         <span>字体大小</span>
-                        <i className="text-gray-400 fas fa-font"></i>
+                        <FontAwesomeIcon icon={faFont as IconProp} className="text-gray-400 dark:text-gray-500" />
                     </div>
 
                     {isFontSettingVisible && (
-                        <div className="px-4 py-3 bg-gray-700">
+                        <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700">
                             <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs text-gray-400">小</span>
-                                <span className="text-white text-sm">{settings.fontSize}px</span>
-                                <span className="text-lg text-gray-400">大</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">小</span>
+                                <span className="text-gray-700 dark:text-gray-300 text-sm">{settings.fontSize}px</span>
+                                <span className="text-lg text-gray-500 dark:text-gray-400">大</span>
                             </div>
                             <input
                                 type="range"
@@ -85,10 +90,21 @@ export default function UserMenu({ username, onLogout }: UserMenuProps): JSX.Ele
                         </div>
                     )}
 
-                    <hr className="border-gray-600" />
+                    <div
+                        className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer flex items-center justify-between"
+                        onClick={toggleTheme}
+                    >
+                        <span>{settings.theme === 'light' ? '切换到暗色模式' : '切换到亮色模式'}</span>
+                        <FontAwesomeIcon
+                            icon={settings.theme === 'light' ? faMoon as IconProp : faSun as IconProp}
+                            className="text-gray-400 dark:text-gray-500"
+                        />
+                    </div>
+
+                    <hr className="border-gray-200 dark:border-gray-700" />
                     <button
                         onClick={onLogout}
-                        className="w-full text-left px-4 py-2 text-red-500 hover:bg-gray-700"
+                        className="w-full text-left px-4 py-2 text-red-500 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                         退出
                     </button>

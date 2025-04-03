@@ -3,22 +3,22 @@
 import { Suspense } from 'react'
 import { AuthProvider, useAuth } from '@/context/AuthContext'
 import { SettingsProvider } from '@/context/SettingsContext'
-
-import Header from '@/components/Header'
+import Header from '@/components/Layout/Header'
 
 // 创建一个内部组件来使用 Context
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
     // 在这里使用 useAuth，这样可以响应 Context 的变化
-    const { username, logout, currentPath } = useAuth()
+    const { username, logout } = useAuth()
 
     return (
-        <div className="p-5 pt-12 h-screen flex flex-col">
+        <div className="h-screen flex flex-col bg-white dark:bg-gray-900">
             <Header
                 username={username ?? undefined}
                 onLogout={logout}
-                currentPath={currentPath ?? '/'}
             />
-            {children}
+            <div className="flex-1 overflow-hidden">
+                {children}
+            </div>
         </div>
     )
 }

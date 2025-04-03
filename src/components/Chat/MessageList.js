@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faStar, faCopy, faArrowDown, faChevronDown, faChevronUp, faMemory, faBook, faSearch } from '@fortawesome/free-solid-svg-icons';
-import MarkdownRenderer from '../Knowledge/MarkdownRenderer';
+import MarkdownRenderer from '../Common/MarkdownRenderer';
 import CopyButton from '../Common/CopyButton';
 import { useChat } from '@/context/ChatContext';
 
@@ -38,27 +38,26 @@ function MemoryCard({ memory, isCollapsed, toggleCollapse }) {
     const memoryDate = new Date(memoryData.created_at * 1000);
 
     return (
-        <div className="bg-gray-50 rounded-lg border border-gray-200 mb-2 text-sm transition-all duration-300">
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 mb-2 text-sm transition-all duration-300">
             <div
-                className="flex flex-col p-2 cursor-pointer hover:bg-gray-100 rounded-t-lg"
+                className="flex flex-col p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-t-lg"
                 onClick={toggleCollapse}
             >
                 <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
-                        <FontAwesomeIcon icon={faMemory} className="text-gray-500" />
-                        <span className="font-medium text-gray-600">{memoryData.topic}</span>
+                        <FontAwesomeIcon icon={faMemory} className="text-gray-500 dark:text-gray-400" />
+                        <span className="font-medium text-gray-600 dark:text-gray-300">{memoryData.topic}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500">{getRelativeTime(memoryData.created_at)}</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{getRelativeTime(memoryData.created_at)}</span>
                         <FontAwesomeIcon
                             icon={isCollapsed ? faChevronDown : faChevronUp}
-                            className="text-gray-500 transition-transform duration-300"
+                            className="text-gray-500 dark:text-gray-400 transition-transform duration-300"
                         />
                     </div>
                 </div>
 
-                {/* 即使在折叠状态下也显示问题 */}
-                <div className="mt-1 text-gray-700 line-clamp-2 text-xs">
+                <div className="mt-1 text-gray-700 dark:text-gray-300 line-clamp-2 text-xs">
                     <span className="font-medium">问：</span>
                     <span>{memoryData.question}</span>
                 </div>
@@ -68,10 +67,10 @@ function MemoryCard({ memory, isCollapsed, toggleCollapse }) {
                 className={`overflow-hidden transition-all duration-300 ease-in-out ${isCollapsed ? 'max-h-0 opacity-0' : 'max-h-96 opacity-100'
                     }`}
             >
-                <div className="p-2 border-t border-gray-200">
+                <div className="p-2 border-t border-gray-200 dark:border-gray-700">
                     <div>
-                        <span className="font-medium text-gray-700">答：</span>
-                        <span className="text-gray-600">{memoryData.answer}</span>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">答：</span>
+                        <span className="text-gray-600 dark:text-gray-400">{memoryData.answer}</span>
                     </div>
                 </div>
             </div>
@@ -106,30 +105,30 @@ function MemoryGroup({ memories, chunkType }) {
         'memory_retrieve': {
             icon: faMemory,
             title: '记忆检索',
-            bgColor: 'bg-gray-50',
-            borderColor: 'border-gray-200',
-            textColor: 'text-gray-600'
+            bgColor: 'bg-gray-50 dark:bg-gray-800/50',
+            borderColor: 'border-gray-200 dark:border-gray-700',
+            textColor: 'text-gray-600 dark:text-gray-300'
         },
         'memory_extract': {
             icon: faBook,
             title: '记忆提取',
-            bgColor: 'bg-gray-50',
-            borderColor: 'border-gray-200',
-            textColor: 'text-gray-600'
+            bgColor: 'bg-gray-50 dark:bg-gray-800/50',
+            borderColor: 'border-gray-200 dark:border-gray-700',
+            textColor: 'text-gray-600 dark:text-gray-300'
         },
         'kg_retrieve': {
             icon: faBook,
             title: '知识库',
-            bgColor: 'bg-gray-50',
-            borderColor: 'border-gray-200',
-            textColor: 'text-gray-600'
+            bgColor: 'bg-gray-50 dark:bg-gray-800/50',
+            borderColor: 'border-gray-200 dark:border-gray-700',
+            textColor: 'text-gray-600 dark:text-gray-300'
         },
         'search_results': {
             icon: faSearch,
             title: '搜索结果',
-            bgColor: 'bg-gray-50',
-            borderColor: 'border-gray-200',
-            textColor: 'text-gray-600'
+            bgColor: 'bg-gray-50 dark:bg-gray-800/50',
+            borderColor: 'border-gray-200 dark:border-gray-700',
+            textColor: 'text-gray-600 dark:text-gray-300'
         }
     };
 
@@ -159,7 +158,7 @@ function MemoryGroup({ memories, chunkType }) {
             <div className="flex items-center gap-2 mb-2">
                 <FontAwesomeIcon icon={config.icon} className={config.textColor} />
                 <span className={`font-medium ${config.textColor}`}>{config.title}</span>
-                <span className="text-xs text-gray-500 ml-auto">
+                <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">
                     {validMemories.length} 项结果
                 </span>
             </div>
@@ -551,10 +550,10 @@ export default function MessageList() {
 
     // 修改等待响应提示组件
     const ResponseWaitingIndicator = () => (
-        <div className="flex items-center gap-1.5 text-gray-400 text-sm">
-            <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }}></div>
-            <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }}></div>
-            <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }}></div>
+        <div className="flex items-center gap-1.5 text-gray-400 dark:text-gray-500 text-sm">
+            <div className="w-2 h-2 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce" style={{ animationDelay: '0ms' }}></div>
+            <div className="w-2 h-2 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce" style={{ animationDelay: '150ms' }}></div>
+            <div className="w-2 h-2 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce" style={{ animationDelay: '300ms' }}></div>
         </div>
     );
 
@@ -566,7 +565,7 @@ export default function MessageList() {
             >
                 {currentThreadId && !isLoading && processedMessages.length === 0 ? (
                     <div className="flex items-center justify-center h-full">
-                        <div className="text-center text-gray-500">
+                        <div className="text-center text-gray-500 dark:text-gray-400">
                             <p>当前对话还没有消息</p>
                             <p className="text-sm mt-2">在下方输入框开始对话吧</p>
                         </div>
@@ -603,24 +602,27 @@ export default function MessageList() {
                                     >
                                         <div
                                             className={`relative rounded-lg p-1 
-                                            ${selectedMessageIds.includes(message.chunk_id) ? 'ring-2 ring-blue-400' : ''}`}
+                                            ${selectedMessageIds.includes(message.chunk_id) ? 'ring-2 ring-blue-400 dark:ring-blue-500' : ''}`}
                                         >
                                             <div
-                                                className={`rounded-lg p-1 m-1 ${message.role === 'user' ? 'bg-gray-100 max-w-[100%]' : 'w-full'}`}
+                                                className={`rounded-lg p-1 m-1 ${message.role === 'user'
+                                                    ? 'bg-blue-50 dark:bg-blue-900/30 max-w-[100%]'
+                                                    : 'bg-gray-50 dark:bg-gray-800/50 w-full'
+                                                    }`}
                                             >
                                                 <MarkdownRenderer
                                                     content={message.content}
-                                                    className="prose prose-sm max-w-none"
+                                                    className="prose prose-sm max-w-none dark:prose-invert prose-p:dark:text-gray-200 prose-pre:dark:text-gray-200 prose-code:dark:text-gray-200"
                                                 />
                                             </div>
 
                                             <div className={`flex items-center gap-2 mb-1 text-xs ${message.role === 'user' ? 'justify-end' : ''}`}>
-                                                <span className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <span className="text-gray-400 dark:text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     {getRelativeTime(message.created_at)}
                                                 </span>
 
                                                 {message.favorite && (
-                                                    <span className="text-yellow-500">
+                                                    <span className="text-yellow-500 dark:text-yellow-400">
                                                         <FontAwesomeIcon icon={faStar} size="xs" />
                                                     </span>
                                                 )}
@@ -628,7 +630,7 @@ export default function MessageList() {
                                                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <CopyButton
                                                         content={message.content}
-                                                        iconClassName="text-gray-400"
+                                                        iconClassName="text-gray-400 dark:text-gray-500"
                                                     />
                                                 </div>
 
@@ -636,8 +638,8 @@ export default function MessageList() {
                                                     className={`cursor-pointer w-5 h-5 rounded-full flex items-center justify-center ml-1
                                                     opacity-0 group-hover:opacity-100 transition-opacity
                                                     ${selectedMessageIds.includes(message.chunk_id)
-                                                            ? 'bg-blue-600 text-white'
-                                                            : 'bg-gray-200 text-gray-500'}`}
+                                                            ? 'bg-blue-600 dark:bg-blue-500 text-white'
+                                                            : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}
                                                     onClick={() => handleSelectMessage(message.chunk_id)}
                                                     title="选择消息"
                                                 >
@@ -658,7 +660,7 @@ export default function MessageList() {
             {/* 悬浮箭头 */}
             {!isAtBottom && (
                 <button
-                    className="absolute bottom-16 right-4 w-10 h-10 bg-blue-500 text-white rounded-full shadow-md flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity"
+                    className="absolute bottom-16 right-4 w-10 h-10 bg-blue-500 dark:bg-blue-600 text-white rounded-full shadow-md flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity"
                     onClick={scrollToBottom}
                     title="滚动到底部"
                 >
@@ -668,15 +670,15 @@ export default function MessageList() {
 
             {
                 selectedMessageIds.length > 0 && (
-                    <div className="sticky bottom-0 bg-white p-3 shadow-md flex justify-end gap-4">
+                    <div className="sticky bottom-0 bg-white dark:bg-gray-800 p-3 shadow-md flex justify-end gap-4">
                         <button
-                            className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700"
+                            className="px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                             onClick={handleShareMessages}
                         >
                             分享选中消息
                         </button>
                         <button
-                            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-700"
+                            className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                             onClick={handleCancelShare}
                         >
                             取消选择

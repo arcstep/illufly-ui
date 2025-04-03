@@ -1,12 +1,12 @@
 import './globals.css'
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import { Providers } from './providers';
+import { SettingsProvider } from '@/context/SettingsContext';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-    title: 'IlluFly',
+    title: 'Illufly',
     description: 'AI Assistant',
 };
 
@@ -16,11 +16,11 @@ export default function RootLayout({
     children: React.ReactNode
 }) {
     return (
-        <html lang="zh">
-            <body className={inter.className}>
-                <Providers>
+        <html lang="zh" suppressHydrationWarning>
+            <body className={`${inter.className} antialiased`}>
+                <SettingsProvider>
                     {children}
-                </Providers>
+                </SettingsProvider>
             </body>
         </html>
     )

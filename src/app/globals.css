@@ -2,55 +2,177 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+    :root {
+        --background: 0 0% 100%;
+        --foreground: 222.2 84% 4.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 222.2 84% 4.9%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 222.2 84% 4.9%;
+        --primary: 221.2 83.2% 53.3%;
+        --primary-foreground: 210 40% 98%;
+        --secondary: 210 40% 96.1%;
+        --secondary-foreground: 222.2 47.4% 11.2%;
+        --muted: 210 40% 96.1%;
+        --muted-foreground: 215.4 16.3% 46.9%;
+        --accent: 210 40% 96.1%;
+        --accent-foreground: 222.2 47.4% 11.2%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 214.3 31.8% 91.4%;
+        --input: 214.3 31.8% 91.4%;
+        --ring: 221.2 83.2% 53.3%;
+        --radius: 0.5rem;
+    }
+
+    .dark {
+        --background: 222.2 84% 4.9%;
+        --foreground: 210 40% 98%;
+        --card: 222.2 84% 4.9%;
+        --card-foreground: 210 40% 98%;
+        --popover: 222.2 84% 4.9%;
+        --popover-foreground: 210 40% 98%;
+        --primary: 217.2 91.2% 59.8%;
+        --primary-foreground: 222.2 47.4% 11.2%;
+        --secondary: 217.2 32.6% 17.5%;
+        --secondary-foreground: 210 40% 98%;
+        --muted: 217.2 32.6% 17.5%;
+        --muted-foreground: 215 20.2% 65.1%;
+        --accent: 217.2 32.6% 17.5%;
+        --accent-foreground: 210 40% 98%;
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 217.2 32.6% 17.5%;
+        --input: 217.2 32.6% 17.5%;
+        --ring: 224.3 76.3% 48%;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-[hsl(var(--border))];
+    }
+
+    body {
+        @apply bg-background text-foreground;
+    }
+}
+
+/* 自定义滚动条样式 */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    @apply bg-gray-100 dark:bg-gray-800;
+}
+
+::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400 dark:bg-gray-500;
+}
+
+/* Markdown 内容样式 */
+.markdown-content {
+    @apply text-gray-800 dark:text-gray-200;
+}
+
 .markdown-content h1,
 .markdown-content h2,
 .markdown-content h3,
 .markdown-content h4,
 .markdown-content h5,
 .markdown-content h6 {
-    font-weight: bold;
+    @apply font-bold dark:text-gray-100;
     margin-top: 1em;
     margin-bottom: 0.5em;
 }
 
 .markdown-content p {
-    margin-bottom: 1em;
+    @apply mb-4 dark:text-gray-300;
 }
 
 .markdown-content ul,
 .markdown-content ol {
-    padding-left: 1.5em;
-    margin-bottom: 1em;
+    @apply pl-6 mb-4 dark:text-gray-300;
 }
 
 .markdown-content li {
-    margin-bottom: 0.5em;
+    @apply mb-2 dark:text-gray-300;
 }
 
 .markdown-content a {
-    color: blue;
-    text-decoration: underline;
+    @apply text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline;
 }
 
 .markdown-content blockquote {
-    border-left: 4px solid #ccc;
-    padding-left: 1em;
-    color: #666;
-    margin-bottom: 1em;
+    @apply border-l-4 border-gray-300 dark:border-gray-600 pl-4 italic;
+    @apply text-gray-600 dark:text-gray-400;
+    @apply mb-4;
 }
 
 .markdown-content code {
-    background-color: #f5f5f5;
-    padding: 0.2em 0.4em;
-    border-radius: 3px;
-    font-family: monospace;
+    @apply bg-gray-100 dark:bg-gray-800;
+    @apply text-gray-800 dark:text-gray-200;
+    @apply px-2 py-1 rounded;
+    @apply font-mono text-sm;
 }
 
 .markdown-content pre {
-    background-color: #f5f5f5;
-    padding: 1em;
-    border-radius: 3px;
-    overflow-x: auto;
-    margin-bottom: 1em;
+    @apply bg-gray-100 dark:bg-gray-800;
+    @apply p-4 rounded-lg;
+    @apply overflow-x-auto;
+    @apply mb-4;
 }
 
+.markdown-content pre code {
+    @apply bg-transparent dark:bg-transparent;
+    @apply p-0;
+    @apply text-sm;
+}
+
+/* 消息气泡样式 */
+.message-bubble {
+    @apply bg-white dark:bg-gray-800;
+    @apply border border-gray-200 dark:border-gray-700;
+    @apply shadow-sm;
+}
+
+.message-bubble.user {
+    @apply bg-blue-50 dark:bg-blue-900/30;
+    @apply border-blue-100 dark:border-blue-800;
+}
+
+/* 输入框样式 */
+.chat-input {
+    @apply bg-white dark:bg-gray-800;
+    @apply border-gray-200 dark:border-gray-700;
+    @apply text-gray-900 dark:text-gray-100;
+    @apply placeholder-gray-400 dark:placeholder-gray-500;
+}
+
+/* 按钮样式 */
+.btn-primary {
+    @apply bg-blue-600 dark:bg-blue-500;
+    @apply hover:bg-blue-700 dark:hover:bg-blue-600;
+    @apply text-white;
+}
+
+.btn-secondary {
+    @apply bg-gray-200 dark:bg-gray-700;
+    @apply hover:bg-gray-300 dark:hover:bg-gray-600;
+    @apply text-gray-800 dark:text-gray-200;
+}
+
+/* 卡片样式 */
+.card {
+    @apply bg-white dark:bg-gray-800;
+    @apply border border-gray-200 dark:border-gray-700;
+    @apply shadow-sm;
+    @apply rounded-lg;
+}

@@ -45,44 +45,44 @@ function EditMemoryDialog({ memory, isOpen, onClose, onSave }: {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                <h2 className="text-xl font-bold mb-4">编辑记忆</h2>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">编辑记忆</h2>
 
                 <form onSubmit={handleSubmit}>
                     <div className="mb-4">
-                        <label className="block text-gray-700 text-sm font-bold mb-2">
+                        <label className="block text-gray-700 dark:text-gray-200 text-sm font-bold mb-2">
                             主题
                         </label>
                         <input
                             type="text"
                             value={topic}
                             onChange={(e) => setTopic(e.target.value)}
-                            className="w-full p-2 border rounded-lg"
+                            className="w-full p-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-blue-500 dark:focus:ring-blue-400"
                             required
                         />
                     </div>
 
                     <div className="mb-4">
-                        <label className="block text-gray-700 text-sm font-bold mb-2">
+                        <label className="block text-gray-700 dark:text-gray-200 text-sm font-bold mb-2">
                             问题
                         </label>
                         <textarea
                             value={question}
                             onChange={(e) => setQuestion(e.target.value)}
-                            className="w-full p-2 border rounded-lg h-24"
+                            className="w-full p-2 border rounded-lg h-24 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-blue-500 dark:focus:ring-blue-400"
                             required
                         />
                     </div>
 
                     <div className="mb-6">
-                        <label className="block text-gray-700 text-sm font-bold mb-2">
+                        <label className="block text-gray-700 dark:text-gray-200 text-sm font-bold mb-2">
                             答案
                         </label>
                         <textarea
                             value={answer}
                             onChange={(e) => setAnswer(e.target.value)}
-                            className="w-full p-2 border rounded-lg h-32"
+                            className="w-full p-2 border rounded-lg h-32 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-blue-500 dark:focus:ring-blue-400"
                             required
                         />
                     </div>
@@ -91,14 +91,14 @@ function EditMemoryDialog({ memory, isOpen, onClose, onSave }: {
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2 text-gray-600 hover:text-gray-800 border rounded-lg"
+                            className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
                             disabled={isSaving}
                         >
                             取消
                         </button>
                         <button
                             type="submit"
-                            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
                             disabled={isSaving}
                         >
                             {isSaving ? '保存中...' : '保存'}
@@ -120,22 +120,22 @@ function DeleteConfirmDialog({ isOpen, onClose, onConfirm, isDeleting }: {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                <h2 className="text-xl font-bold mb-4">确认删除</h2>
-                <p className="mb-6">确定要删除这条记忆吗？此操作无法撤销。</p>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+                <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">确认删除</h2>
+                <p className="mb-6 text-gray-700 dark:text-gray-300">确定要删除这条记忆吗？此操作无法撤销。</p>
 
                 <div className="flex justify-end space-x-3">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-gray-600 hover:text-gray-800 border rounded-lg"
+                        className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
                         disabled={isDeleting}
                     >
                         取消
                     </button>
                     <button
                         onClick={onConfirm}
-                        className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+                        className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
                         disabled={isDeleting}
                     >
                         {isDeleting ? '删除中...' : '删除'}
@@ -160,21 +160,23 @@ function TopicCard({ topic, memories, isExpanded, onToggle }: { topic: string, m
         <div className="rounded-lg shadow-sm transition-all overflow-hidden h-full">
             {/* 卡片头部 */}
             <div
-                className={`p-4 cursor-pointer ${isExpanded ? 'bg-blue-50 border-l-4 border-blue-500' : 'bg-white hover:bg-gray-50 border-l-4 border-transparent'}`}
+                className={`p-4 cursor-pointer ${isExpanded
+                    ? 'bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 dark:border-blue-400'
+                    : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border-l-4 border-transparent'}`}
                 onClick={onToggle}
                 style={{ fontSize: `${settings.fontSize}px` }}
             >
                 <div className="flex justify-between items-center">
                     <div className="flex items-center">
-                        <h3 className="text-lg font-semibold">{topic}</h3>
-                        <span className="ml-2 text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{topic}</h3>
+                        <span className="ml-2 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded-full">
                             {count} 条记忆
                         </span>
                     </div>
                     <div className="flex items-center">
-                        <span className="text-sm text-gray-500 mr-2">{format(topicDate, 'yyyy-MM-dd HH:mm')}</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400 mr-2">{format(topicDate, 'yyyy-MM-dd HH:mm')}</span>
                         <svg
-                            className={`w-4 h-4 text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                            className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -188,7 +190,7 @@ function TopicCard({ topic, memories, isExpanded, onToggle }: { topic: string, m
 
             {/* 卡片展开内容 */}
             {isExpanded && (
-                <div className="bg-gray-50 px-3 py-2 animate-fadeIn border-t border-gray-200">
+                <div className="bg-gray-50 dark:bg-gray-800/50 px-3 py-2 animate-fadeIn border-t border-gray-200 dark:border-gray-700">
                     {memories.map(memory => (
                         <MemoryCard
                             key={memory.memory_id}
@@ -246,39 +248,39 @@ function MemoryCard({ memory }: { memory: any }) {
 
     return (
         <div
-            className="bg-white p-3 rounded-lg shadow-sm mb-2 border-l-2 border-gray-200 relative"
+            className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm mb-2 border-l-2 border-gray-200 dark:border-gray-700 relative"
             style={{ fontSize: `${settings.fontSize}px` }}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
             {/* 显示距离信息（优先） */}
             {memory.distance !== undefined && memory.distance != null && (
-                <div className="absolute top-0 right-0 bg-green-100 text-green-800 text-xs px-2 py-1 m-1 rounded-full">
+                <div className="absolute top-0 right-0 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs px-2 py-1 m-1 rounded-full">
                     距离: {memory.distance.toFixed(3)}
                 </div>
             )}
 
             <div className="mb-2">
-                <span className="font-medium text-gray-800">问：</span>
-                <span className="text-gray-700">{memory.question}</span>
+                <span className="font-medium text-gray-800 dark:text-gray-200">问：</span>
+                <span className="text-gray-700 dark:text-gray-300">{memory.question}</span>
             </div>
             <div className="mb-2">
-                <span className="font-medium text-gray-800">答：</span>
-                <span className="text-gray-700">{memory.answer}</span>
+                <span className="font-medium text-gray-800 dark:text-gray-200">答：</span>
+                <span className="text-gray-700 dark:text-gray-300">{memory.answer}</span>
             </div>
             <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-500">{format(memoryDate, 'yyyy-MM-dd HH:mm')}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{format(memoryDate, 'yyyy-MM-dd HH:mm')}</span>
 
                 <div className={`flex space-x-2 transition-opacity duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
                     <button
                         onClick={handleEdit}
-                        className="text-xs text-blue-600 hover:text-blue-800"
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                     >
                         编辑
                     </button>
                     <button
                         onClick={handleDelete}
-                        className="text-xs text-red-600 hover:text-red-800"
+                        className="text-xs text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
                     >
                         删除
                     </button>
@@ -309,17 +311,17 @@ function SearchResults({ results, onClearSearch }: { results: any[], onClearSear
     return (
         <div className="mt-4">
             <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold">搜索结果 ({results.length})</h2>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">搜索结果 ({results.length})</h2>
                 <button
                     onClick={onClearSearch}
-                    className="text-sm text-blue-600 hover:text-blue-800"
+                    className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                 >
                     返回所有记忆
                 </button>
             </div>
 
             {results.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                     没有找到相关记忆
                 </div>
             ) : (
@@ -399,7 +401,7 @@ function MemoryContent() {
     const topics = Array.from(topicGroups.keys());
 
     return (
-        <div className="p-5 h-full overflow-y-auto">
+        <div className="p-5 h-full overflow-y-auto bg-white dark:bg-gray-900">
             {/* 搜索部分 - 居中显示 */}
             <div className="max-w-2xl mx-auto mb-8">
                 <form onSubmit={handleSearch} className="w-full">
@@ -409,7 +411,7 @@ function MemoryContent() {
                             onChange={(e) => setSearchQuery(e.target.value)}
                             onKeyDown={handleKeyDown}
                             placeholder="输入问题或关键词搜索相似记忆... (回车搜索，Shift+回车换行)"
-                            className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                            className="w-full px-4 py-3 pr-12 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent resize-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                             style={{
                                 minHeight: '2.5rem',
                                 maxHeight: 'calc(5 * 1.5rem + 1.5rem)',
@@ -420,7 +422,7 @@ function MemoryContent() {
                         />
                         <button
                             type="submit"
-                            className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-gray-300 hover:text-gray-500 focus:outline-none transition-colors duration-200"
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none transition-colors duration-200"
                             disabled={isSearching || !searchQuery.trim()}
                             title="基于语义相似度搜索"
                         >
@@ -442,7 +444,7 @@ function MemoryContent() {
                         <button
                             type="button"
                             onClick={() => setShowAdvanced(!showAdvanced)}
-                            className="text-xs text-gray-500 hover:text-gray-700 focus:outline-none"
+                            className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none"
                         >
                             {showAdvanced ? '隐藏高级选项' : '显示高级选项'}
                         </button>
@@ -450,11 +452,11 @@ function MemoryContent() {
 
                     {/* 高级搜索选项 */}
                     {showAdvanced && (
-                        <div className="mt-2 grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="mt-2 grid grid-cols-2 gap-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                             <div>
-                                <label className="block text-xs text-gray-600 mb-1">
+                                <label className="block text-xs text-gray-600 dark:text-gray-300 mb-1">
                                     距离阈值 (0.1-2.0)
-                                    <span className="ml-1 text-gray-400">小值=更相似</span>
+                                    <span className="ml-1 text-gray-400 dark:text-gray-500">小值=更相似</span>
                                 </label>
                                 <div className="flex items-center">
                                     <input
@@ -466,11 +468,11 @@ function MemoryContent() {
                                         onChange={(e) => setThreshold(parseFloat(e.target.value))}
                                         className="w-full mr-2"
                                     />
-                                    <span className="text-xs w-10 text-center bg-white px-1 py-0.5 rounded border">{threshold}</span>
+                                    <span className="text-xs w-10 text-center bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-1 py-0.5 rounded border border-gray-300 dark:border-gray-600">{threshold}</span>
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-600 mb-1">
+                                <label className="block text-xs text-gray-600 dark:text-gray-300 mb-1">
                                     结果数量 (1-50)
                                 </label>
                                 <div className="flex items-center">
@@ -483,7 +485,7 @@ function MemoryContent() {
                                         onChange={(e) => setTopK(parseInt(e.target.value))}
                                         className="w-full mr-2"
                                     />
-                                    <span className="text-xs w-10 text-center bg-white px-1 py-0.5 rounded border">{topK}</span>
+                                    <span className="text-xs w-10 text-center bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-1 py-0.5 rounded border border-gray-300 dark:border-gray-600">{topK}</span>
                                 </div>
                             </div>
                         </div>
@@ -498,7 +500,7 @@ function MemoryContent() {
                 />
             ) : (
                 topics.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                         暂无记忆，开始对话创建新记忆吧
                     </div>
                 ) : (

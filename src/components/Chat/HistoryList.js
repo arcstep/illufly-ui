@@ -130,28 +130,42 @@ export default function HistoryList() {
     }, [createNewThread, switchingThread])
 
     return (
-        <div className="w-full max-w-xs p-4 border-b md:border-b-0 md:border-r">
+        <div className="w-full max-w-xs p-4 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
             <button
-                className={`w-full p-3 mb-4 text-left text-white ${switchingThread ? 'bg-blue-400' : 'bg-blue-500 hover:bg-blue-600'} rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50 transition duration-150 ease-in-out`}
+                className={`w-full p-3 mb-4 text-left text-white 
+                ${switchingThread
+                        ? 'bg-blue-400 dark:bg-blue-500'
+                        : 'bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700'} 
+                rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-500 focus:ring-opacity-50 
+                transition duration-150 ease-in-out`}
                 onClick={handleCreateThread}
                 disabled={switchingThread}
             >
                 <span className="font-medium">+ {switchingThread ? '创建中...' : '新对话'}</span>
             </button>
             {loading ? (
-                <div className="text-center py-4">加载中...</div>
+                <div className="text-center py-4 text-gray-500 dark:text-gray-400">加载中...</div>
             ) : threads.length === 0 ? (
-                <div className="text-center text-gray-500 py-4">暂无对话记录</div>
+                <div className="text-center text-gray-500 dark:text-gray-400 py-4">暂无对话记录</div>
             ) : (
                 threads.map(({ thread_id, title }) => {
                     const isActive = thread_id === currentThreadId;
                     const isSwitching = switchingThread && lastClickedThread.current === thread_id;
 
                     return (
-                        <div key={thread_id} className={`border-b border-gray-200 ${isActive ? 'border-l-4 border-l-blue-500 bg-blue-50' : ''}`}>
+                        <div key={thread_id}
+                            className={`border-b border-gray-200 dark:border-gray-700 
+                            ${isActive
+                                    ? 'border-l-4 border-l-blue-500 dark:border-l-blue-400 bg-blue-50 dark:bg-blue-900/30'
+                                    : ''}`}
+                        >
                             <button
                                 onClick={() => handleSwitchThread(thread_id)}
-                                className={`w-full p-2 text-left hover:bg-gray-100 transition-colors ${isActive ? 'font-bold text-blue-600' : ''} ${isSwitching ? 'opacity-70' : ''}`}
+                                className={`w-full p-2 text-left transition-colors
+                                ${isActive
+                                        ? 'font-bold text-blue-600 dark:text-blue-400'
+                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'} 
+                                ${isSwitching ? 'opacity-70' : ''}`}
                                 disabled={switchingThread}
                             >
                                 <div className="font-medium truncate">

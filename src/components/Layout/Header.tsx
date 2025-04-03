@@ -24,8 +24,7 @@ export default function Header({ username, onLogout }: HeaderProps) {
                     <div className="flex">
                         <div className="flex-shrink-0 flex items-center">
                             <Link href="/chat" className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                <span className="text-blue-500 dark:text-blue-400">+</span>
-                                <span className="text-blue-500 dark:text-blue-400">🦋</span>
+                                <span className="text-blue-500 dark:text-blue-400">✨🦋</span>
                                 <span className="bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 text-transparent bg-clip-text">
                                     ILLUFLY
                                 </span>

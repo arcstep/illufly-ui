@@ -607,7 +607,7 @@ export default function MessageList() {
                                             <div
                                                 className={`rounded-lg p-1 m-1 ${message.role === 'user'
                                                     ? 'bg-blue-50 dark:bg-blue-900/30 max-w-[100%]'
-                                                    : 'bg-gray-50 dark:bg-gray-800/50 w-full'
+                                                    : 'w-full'
                                                     }`}
                                             >
                                                 <MarkdownRenderer

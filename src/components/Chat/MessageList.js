@@ -38,15 +38,15 @@ function MemoryCard({ memory, isCollapsed, toggleCollapse }) {
     const memoryDate = new Date(memoryData.created_at * 1000);
 
     return (
-        <div className="bg-blue-50 rounded-lg border border-blue-200 mb-2 text-sm transition-all duration-300">
+        <div className="bg-gray-50 rounded-lg border border-gray-200 mb-2 text-sm transition-all duration-300">
             <div
-                className="flex flex-col p-2 cursor-pointer hover:bg-blue-100 rounded-t-lg"
+                className="flex flex-col p-2 cursor-pointer hover:bg-gray-100 rounded-t-lg"
                 onClick={toggleCollapse}
             >
                 <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
-                        <FontAwesomeIcon icon={faMemory} className="text-blue-500" />
-                        <span className="font-medium text-blue-800">{memoryData.topic}</span>
+                        <FontAwesomeIcon icon={faMemory} className="text-gray-500" />
+                        <span className="font-medium text-gray-600">{memoryData.topic}</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <span className="text-xs text-gray-500">{getRelativeTime(memoryData.created_at)}</span>
@@ -58,7 +58,7 @@ function MemoryCard({ memory, isCollapsed, toggleCollapse }) {
                 </div>
 
                 {/* 即使在折叠状态下也显示问题 */}
-                <div className="mt-1 text-gray-700 line-clamp-2 text-sm">
+                <div className="mt-1 text-gray-700 line-clamp-2 text-xs">
                     <span className="font-medium">问：</span>
                     <span>{memoryData.question}</span>
                 </div>
@@ -68,7 +68,7 @@ function MemoryCard({ memory, isCollapsed, toggleCollapse }) {
                 className={`overflow-hidden transition-all duration-300 ease-in-out ${isCollapsed ? 'max-h-0 opacity-0' : 'max-h-96 opacity-100'
                     }`}
             >
-                <div className="p-2 border-t border-blue-200">
+                <div className="p-2 border-t border-gray-200">
                     <div>
                         <span className="font-medium text-gray-700">答：</span>
                         <span className="text-gray-600">{memoryData.answer}</span>
@@ -91,12 +91,14 @@ function MemoryGroup({ memories, chunkType }) {
     };
 
     useEffect(() => {
-        // 如果只有一条记忆，默认展开
-        if (memories.length === 1) {
-            const memory = memories[0].memory || memories[0];
-            const id = memory.question_hash || `mem_${Date.now()}`;
-            setExpandedMemories({ [id]: true });
-        }
+        // 默认所有记忆折叠
+        const initialState = {};
+        memories.forEach(memory => {
+            const memoryData = memory.memory || memory;
+            const id = memoryData.question_hash || `mem_${Date.now()}`;
+            initialState[id] = false; // 默认折叠
+        });
+        setExpandedMemories(initialState);
     }, [memories]);
 
     // 记忆类型图标和颜色
@@ -104,30 +106,30 @@ function MemoryGroup({ memories, chunkType }) {
         'memory_retrieve': {
             icon: faMemory,
             title: '记忆检索',
-            bgColor: 'bg-blue-50',
-            borderColor: 'border-blue-200',
-            textColor: 'text-blue-800'
+            bgColor: 'bg-gray-50',
+            borderColor: 'border-gray-200',
+            textColor: 'text-gray-600'
         },
         'memory_extract': {
             icon: faBook,
             title: '记忆提取',
-            bgColor: 'bg-green-50',
-            borderColor: 'border-green-200',
-            textColor: 'text-green-800'
+            bgColor: 'bg-gray-50',
+            borderColor: 'border-gray-200',
+            textColor: 'text-gray-600'
         },
         'kg_retrieve': {
             icon: faBook,
             title: '知识库',
-            bgColor: 'bg-purple-50',
-            borderColor: 'border-purple-200',
-            textColor: 'text-purple-800'
+            bgColor: 'bg-gray-50',
+            borderColor: 'border-gray-200',
+            textColor: 'text-gray-600'
         },
         'search_results': {
             icon: faSearch,
             title: '搜索结果',
-            bgColor: 'bg-amber-50',
-            borderColor: 'border-amber-200',
-            textColor: 'text-amber-800'
+            bgColor: 'bg-gray-50',
+            borderColor: 'border-gray-200',
+            textColor: 'text-gray-600'
         }
     };
 
@@ -153,7 +155,7 @@ function MemoryGroup({ memories, chunkType }) {
     }
 
     return (
-        <div className={`${config.bgColor} rounded-lg border ${config.borderColor} p-2 mb-3`}>
+        <div className={`${config.bgColor} rounded-lg border ${config.borderColor} p-2 mb-3 text-xs`}>
             <div className="flex items-center gap-2 mb-2">
                 <FontAwesomeIcon icon={config.icon} className={config.textColor} />
                 <span className={`font-medium ${config.textColor}`}>{config.title}</span>
@@ -309,6 +311,19 @@ export default function MessageList() {
             search_results: []
         };
 
+        // 记忆消息去重用的集合
+        const memoryChunkIds = {
+            memory_retrieve: new Set(),
+            memory_extract: new Set(),
+            kg_retrieve: new Set(),
+            search_results: new Set()
+        };
+
+        // 记录第一个记忆消息的位置
+        let firstMemoryIndex = Infinity;
+        let firstMemorySequence = Infinity;
+        let firstMemoryCreatedAt = Infinity;
+
         // 过滤掉不需要显示的消息类型
         const filteredMessages = messages.filter(message => {
             // 彻底过滤掉ai_delta类型的消息
@@ -320,6 +335,8 @@ export default function MessageList() {
                 role: message.role,
                 id: message.chunk_id,
                 content: message.content?.substring(0, 20) + '...',
+                sequence: message.sequence,
+                created_at: message.created_at
             });
 
             if (messageType === 'ai_delta') {
@@ -375,12 +392,14 @@ export default function MessageList() {
                 return a.created_at - b.created_at;
             });
 
-        // 遍历所有消息
+        // 遍历所有消息，先收集记忆相关消息
         deduplicatedMessages.forEach((message, index) => {
             console.log("处理去重后消息:",
                 message.chunk_id,
                 "类型:", message.chunk_type || message.type,
-                "内容:", message.content?.substring(0, 20) + '...'
+                "内容:", message.content?.substring(0, 20) + '...',
+                "序列:", message.sequence,
+                "创建时间:", message.created_at
             );
 
             // 判断消息是否属于记忆相关类型
@@ -389,6 +408,26 @@ export default function MessageList() {
             // 如果是记忆相关消息，先收集起来不立即添加
             if (messageType && ['memory_retrieve', 'memory_extract', 'kg_retrieve', 'search_results'].includes(messageType)) {
                 console.log(`收集${messageType}类型消息:`, message.chunk_id);
+
+                // 检查此chunk_id是否已经处理过，避免重复添加
+                if (memoryChunkIds[messageType].has(message.chunk_id)) {
+                    console.log(`跳过重复的${messageType}消息:`, message.chunk_id);
+                    return;
+                }
+
+                // 标记为已处理
+                memoryChunkIds[messageType].add(message.chunk_id);
+
+                // 记录第一个记忆消息的位置信息
+                if (index < firstMemoryIndex) {
+                    firstMemoryIndex = index;
+                }
+                if (message.sequence !== undefined && message.sequence < firstMemorySequence) {
+                    firstMemorySequence = message.sequence;
+                }
+                if (message.created_at < firstMemoryCreatedAt) {
+                    firstMemoryCreatedAt = message.created_at;
+                }
 
                 // 对于记忆检索和提取，确保memory对象存在
                 if ((messageType === 'memory_retrieve' || messageType === 'memory_extract') && !message.memory) {
@@ -433,36 +472,62 @@ export default function MessageList() {
                 return;
             }
 
-            // 处理常规消息前，先检查是否有记忆组需要添加
-            const allMemoryGroups = Object.keys(memoryGroups);
-            for (const groupType of allMemoryGroups) {
-                if (memoryGroups[groupType].length > 0) {
-                    // 添加收集的记忆组
-                    result.push({
-                        isMemoryGroup: true,
-                        chunkType: groupType,
-                        memories: [...memoryGroups[groupType]]
-                    });
-                    // 清空该组
-                    memoryGroups[groupType] = [];
-                }
-            }
-
-            // 添加常规消息
+            // 添加非记忆类型的常规消息
             result.push(message);
         });
 
-        // 检查是否还有剩余的记忆组需要添加
-        const remainingGroups = Object.keys(memoryGroups);
-        for (const groupType of remainingGroups) {
+        // 没有记忆相关消息时直接返回结果
+        if (Object.values(memoryGroups).every(group => group.length === 0)) {
+            console.log("MessageList最终处理后消息列表数量:", result.length);
+            return result;
+        }
+
+        // 找到插入记忆组的位置：记忆消息的创建时间通常早于AI回复消息
+        // 根据索引、序列号和创建时间找到合适的插入位置
+        let insertIndex = 0;
+        for (let i = 0; i < result.length; i++) {
+            const msg = result[i];
+
+            // 如果找到一个消息的sequence大于第一个记忆消息的sequence，或者创建时间晚于第一个记忆消息
+            // 则在此消息之前插入记忆组
+            if ((msg.sequence !== undefined && firstMemorySequence !== Infinity && msg.sequence > firstMemorySequence) ||
+                (firstMemoryCreatedAt !== Infinity && msg.created_at > firstMemoryCreatedAt)) {
+                insertIndex = i;
+                break;
+            }
+
+            // 如果到了最后一条消息还没找到合适的位置，就将记忆组放在最后
+            if (i === result.length - 1) {
+                insertIndex = result.length;
+            }
+        }
+
+        // 如果结果数组为空，直接将记忆组放在开头
+        if (result.length === 0) {
+            insertIndex = 0;
+        }
+
+        console.log(`将记忆组插入到位置 ${insertIndex}，总消息数: ${result.length}`);
+
+        // 创建记忆组消息对象
+        const memoryGroupMessages = [];
+        const groupTypes = Object.keys(memoryGroups);
+
+        for (const groupType of groupTypes) {
             if (memoryGroups[groupType].length > 0) {
-                result.push({
+                console.log(`添加${groupType}记忆组，包含 ${memoryGroups[groupType].length} 条消息:`,
+                    memoryGroups[groupType].map(m => m.chunk_id).join(', '));
+
+                memoryGroupMessages.push({
                     isMemoryGroup: true,
                     chunkType: groupType,
                     memories: [...memoryGroups[groupType]]
                 });
             }
         }
+
+        // 在合适的位置插入记忆组
+        result.splice(insertIndex, 0, ...memoryGroupMessages);
 
         console.log("MessageList最终处理后消息列表数量:", result.length);
         return result;

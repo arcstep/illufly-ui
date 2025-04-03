@@ -779,11 +779,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
                             console.log(`收到${data.chunk_type}:`, message)
 
-                            // 直接添加到archivedMessages，实时显示记忆消息
+                            // 直接添加到archivedMessages，实时显示记忆消息，不再添加到pendingMessages
                             setArchivedMessages(prev => [...prev, message])
-
-                            // 同时也添加到待处理消息中，以便在useEffect中统一处理
-                            setPendingMessages(prev => [...prev, message])
                         }
                         // 处理知识库检索和搜索结果
                         else if (data.chunk_type === 'kg_retrieve' || data.chunk_type === 'search_results') {
@@ -802,11 +799,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
                             console.log(`收到${data.chunk_type}:`, message)
 
-                            // 直接添加到archivedMessages，实时显示
+                            // 直接添加到archivedMessages，实时显示，不再添加到pendingMessages
                             setArchivedMessages(prev => [...prev, message])
-
-                            // 同时也添加到待处理消息中
-                            setPendingMessages(prev => [...prev, message])
                         }
                         // 处理工具调用结果
                         else if (data.chunk_type === 'tool_result') {

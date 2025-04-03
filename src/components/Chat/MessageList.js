@@ -26,7 +26,16 @@ function getRelativeTime(timestamp) {
 
 // 记忆块组件
 function MemoryCard({ memory, isCollapsed, toggleCollapse }) {
-    const memoryDate = new Date(memory.created_at * 1000);
+    // 确保所有必要字段都存在
+    const memoryData = {
+        topic: memory.topic || '记忆片段',
+        question: memory.question || '未知问题',
+        answer: memory.answer || '未知答案',
+        created_at: memory.created_at || Date.now() / 1000,
+        question_hash: memory.question_hash || `mem_${Date.now()}`
+    };
+
+    const memoryDate = new Date(memoryData.created_at * 1000);
 
     return (
         <div className="bg-blue-50 rounded-lg border border-blue-200 mb-2 text-sm transition-all duration-300">
@@ -37,10 +46,10 @@ function MemoryCard({ memory, isCollapsed, toggleCollapse }) {
                 <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
                         <FontAwesomeIcon icon={faMemory} className="text-blue-500" />
-                        <span className="font-medium text-blue-800">{memory.topic}</span>
+                        <span className="font-medium text-blue-800">{memoryData.topic}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500">{getRelativeTime(memory.created_at)}</span>
+                        <span className="text-xs text-gray-500">{getRelativeTime(memoryData.created_at)}</span>
                         <FontAwesomeIcon
                             icon={isCollapsed ? faChevronDown : faChevronUp}
                             className="text-gray-500 transition-transform duration-300"
@@ -51,7 +60,7 @@ function MemoryCard({ memory, isCollapsed, toggleCollapse }) {
                 {/* 即使在折叠状态下也显示问题 */}
                 <div className="mt-1 text-gray-700 line-clamp-2 text-sm">
                     <span className="font-medium">问：</span>
-                    <span>{memory.question}</span>
+                    <span>{memoryData.question}</span>
                 </div>
             </div>
 
@@ -62,7 +71,7 @@ function MemoryCard({ memory, isCollapsed, toggleCollapse }) {
                 <div className="p-2 border-t border-blue-200">
                     <div>
                         <span className="font-medium text-gray-700">答：</span>
-                        <span className="text-gray-600">{memory.answer}</span>
+                        <span className="text-gray-600">{memoryData.answer}</span>
                     </div>
                 </div>
             </div>
@@ -80,6 +89,15 @@ function MemoryGroup({ memories, chunkType }) {
             [id]: !prev[id]
         }));
     };
+
+    useEffect(() => {
+        // 如果只有一条记忆，默认展开
+        if (memories.length === 1) {
+            const memory = memories[0].memory || memories[0];
+            const id = memory.question_hash || `mem_${Date.now()}`;
+            setExpandedMemories({ [id]: true });
+        }
+    }, [memories]);
 
     // 记忆类型图标和颜色
     const typeConfig = {
@@ -115,26 +133,43 @@ function MemoryGroup({ memories, chunkType }) {
 
     const config = typeConfig[chunkType];
 
+    // 检查记忆是否有效
+    const validMemories = memories.filter(memory => {
+        // 获取memory对象 - 有些消息直接包含memory，有些消息将memory作为单独的属性
+        const memoryData = memory.memory || memory;
+
+        // 检查基本必要字段
+        return (
+            memoryData &&
+            (memoryData.question_hash || memoryData.created_at) &&
+            (memoryData.question || memoryData.content || memoryData.answer)
+        );
+    });
+
+    // 如果没有有效记忆，返回null
+    if (validMemories.length === 0) {
+        console.warn('无有效记忆数据:', memories);
+        return null;
+    }
+
     return (
         <div className={`${config.bgColor} rounded-lg border ${config.borderColor} p-2 mb-3`}>
             <div className="flex items-center gap-2 mb-2">
                 <FontAwesomeIcon icon={config.icon} className={config.textColor} />
                 <span className={`font-medium ${config.textColor}`}>{config.title}</span>
                 <span className="text-xs text-gray-500 ml-auto">
-                    {memories.length} 项结果
+                    {validMemories.length} 项结果
                 </span>
             </div>
 
             <div className="flex flex-wrap gap-2">
-                {memories.map((memory) => {
+                {validMemories.map((memory) => {
                     // 获取memory对象 - 有些消息直接包含memory，有些消息将memory作为单独的属性
                     const memoryData = memory.memory || memory;
 
-                    // 检查是否有效的memory数据
-                    if (!memoryData || !memoryData.question_hash) {
-                        console.warn('无效的记忆数据:', memory);
-                        return null;
-                    }
+                    // 生成唯一ID
+                    const memoryId = memoryData.question_hash ||
+                        `mem_${memoryData.created_at}_${Math.random().toString(36).substring(2, 9)}`;
 
                     // 检查是否有展开的记忆项
                     const hasExpandedItems = Object.values(expandedMemories).some(value => value);
@@ -142,11 +177,11 @@ function MemoryGroup({ memories, chunkType }) {
                     const cardWidth = hasExpandedItems ? 'w-full' : 'w-full md:w-[calc(50%-0.5rem)]';
 
                     return (
-                        <div key={memoryData.question_hash} className={cardWidth}>
+                        <div key={memoryId} className={cardWidth}>
                             <MemoryCard
                                 memory={memoryData}
-                                isCollapsed={!expandedMemories[memoryData.question_hash]}
-                                toggleCollapse={() => toggleMemory(memoryData.question_hash)}
+                                isCollapsed={!expandedMemories[memoryId]}
+                                toggleCollapse={() => toggleMemory(memoryId)}
                             />
                         </div>
                     );
@@ -163,6 +198,7 @@ export default function MessageList() {
     const [selectedMessageIds, setSelectedMessageIds] = useState([]);
     const [timeRefresh, setTimeRefresh] = useState(0);
     const [isAtBottom, setIsAtBottom] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
 
     // 检查是否在底部
     const checkIfAtBottom = () => {
@@ -202,19 +238,43 @@ export default function MessageList() {
         }
     }, []);
 
+    // 当currentThreadId或messages变化时，控制加载状态
     useEffect(() => {
-        const lastThread = threads.sort((a, b) => b.created_at - a.created_at)[0]
-        if (lastThread) {
-            switchThread(lastThread.thread_id)
-        }
-    }, [threads])
+        console.log(`MessageList检测到线程/消息变化: 线程=${currentThreadId}, 消息数量=${messages.length}`);
 
-    // 只有在底部时才自动滚动
+        if (currentThreadId) {
+            // 先显示加载状态
+            setIsLoading(true);
+
+            // 设置一个短超时，用于区分"正在加载"和"线程确实没有消息"的情况
+            const loadingTimeout = setTimeout(() => {
+                // 如果线程ID存在但消息为空，可能是确实没有消息，取消加载状态
+                console.log('初始加载完成，线程ID:', currentThreadId, '消息数量:', messages.length);
+                setIsLoading(false);
+            }, 500); // 等待500ms，让API有足够时间返回消息
+
+            // 如果有消息，立即取消加载状态
+            if (messages.length > 0) {
+                console.log(`收到 ${messages.length} 条消息，取消加载状态`);
+                setIsLoading(false);
+                clearTimeout(loadingTimeout);
+            }
+
+            return () => clearTimeout(loadingTimeout);
+        } else {
+            setIsLoading(false);
+        }
+    }, [currentThreadId, messages.length]);
+
+    // 监听消息变化，自动滚动到底部
     useEffect(() => {
-        if (isAtBottom) {
+        if (isAtBottom || messages.length <= 1) {
             scrollToBottom();
         }
-    }, [messages, isAtBottom]);
+
+        // 每次消息变化时记录在控制台，帮助调试
+        console.log(`MessageList: 当前线程 ${currentThreadId} 的消息数量:`, messages.length);
+    }, [messages, isAtBottom, currentThreadId]);
 
     const handleSelectMessage = (id) => {
         setSelectedMessageIds((prevSelected) =>
@@ -226,7 +286,7 @@ export default function MessageList() {
 
     const handleShareMessages = () => {
         const selectedMessages = messages.filter((message) =>
-            selectedMessageIds.includes(message.dialouge_id)
+            selectedMessageIds.includes(message.chunk_id)
         );
         console.log('分享消息:', selectedMessages);
     };
@@ -237,7 +297,8 @@ export default function MessageList() {
 
     // 处理消息分组
     const processedMessages = useMemo(() => {
-        console.log("原始消息列表:", messages);
+        console.log("MessageList接收到原始消息列表:", messages.length, "条");
+
         // 创建一个新数组存储处理后的消息
         const result = [];
         // 临时存储记忆检索和提取消息
@@ -248,25 +309,126 @@ export default function MessageList() {
             search_results: []
         };
 
-        // 过滤掉content为空的ai_delta消息
+        // 过滤掉不需要显示的消息类型
         const filteredMessages = messages.filter(message => {
-            // 如果是ai_delta类型且content为空，则过滤掉
-            if ((message.chunk_type === 'ai_delta' || message.type === 'ai_delta') && (!message.content || message.content === '')) {
-                console.log("过滤掉空的ai_delta消息:", message.dialouge_id);
+            // 彻底过滤掉ai_delta类型的消息
+            const messageType = message.chunk_type || message.type;
+
+            // 记录所有接收到的消息，便于调试
+            console.log(`MessageList处理消息:`, {
+                type: messageType,
+                role: message.role,
+                id: message.chunk_id,
+                content: message.content?.substring(0, 20) + '...',
+            });
+
+            if (messageType === 'ai_delta') {
+                console.log('过滤掉增量消息:', message.chunk_id);
                 return false;
             }
+
+            // 过滤掉title_update类型的消息，它们应该在ChatContext中处理
+            if (messageType === 'title_update') {
+                console.log('过滤掉title_update消息:', message.chunk_id);
+                return false;
+            }
+
+            // 检查消息完整性
+            if (!message.content) {
+                console.warn('消息内容为空，尝试使用output_text:', message);
+                if (message.output_text) {
+                    message.content = message.output_text;
+                } else {
+                    console.warn('消息没有内容，将被过滤:', message.chunk_id);
+                    return false;
+                }
+            }
+
             return true;
         });
 
+        // 根据is_final字段处理消息，优先显示最终消息
+        const processedMessageMap = new Map();
+
+        // 先遍历一遍，按chunk_id分组，保留is_final为true的消息
+        filteredMessages.forEach(message => {
+            const key = message.chunk_id;
+
+            // 如果已存在此ID且当前消息是最终版本，则替换
+            if (message.is_final && (!processedMessageMap.has(key) || !processedMessageMap.get(key).is_final)) {
+                processedMessageMap.set(key, message);
+            }
+            // 如果尚未添加此ID，则无论是否最终版本都添加
+            else if (!processedMessageMap.has(key)) {
+                processedMessageMap.set(key, message);
+            }
+        });
+
+        // 将处理后的消息转为数组并排序
+        const deduplicatedMessages = Array.from(processedMessageMap.values())
+            .sort((a, b) => {
+                // 优先按sequence排序
+                if (a.sequence !== undefined && b.sequence !== undefined) {
+                    return a.sequence - b.sequence;
+                }
+                // 如果没有sequence，则按created_at排序
+                return a.created_at - b.created_at;
+            });
+
         // 遍历所有消息
-        filteredMessages.forEach((message, index) => {
-            console.log("处理消息:", message, "类型:", message.chunk_type || message.type);
+        deduplicatedMessages.forEach((message, index) => {
+            console.log("处理去重后消息:",
+                message.chunk_id,
+                "类型:", message.chunk_type || message.type,
+                "内容:", message.content?.substring(0, 20) + '...'
+            );
 
             // 判断消息是否属于记忆相关类型
             const messageType = message.type || message.chunk_type;
 
             // 如果是记忆相关消息，先收集起来不立即添加
             if (messageType && ['memory_retrieve', 'memory_extract', 'kg_retrieve', 'search_results'].includes(messageType)) {
+                console.log(`收集${messageType}类型消息:`, message.chunk_id);
+
+                // 对于记忆检索和提取，确保memory对象存在
+                if ((messageType === 'memory_retrieve' || messageType === 'memory_extract') && !message.memory) {
+                    // 尝试从其他字段获取memory数据
+                    if (message.memory_data) {
+                        message.memory = message.memory_data;
+                    } else if (message.content && typeof message.content === 'string') {
+                        // 尝试从content解析JSON
+                        try {
+                            const memoryData = JSON.parse(message.content);
+                            if (memoryData && typeof memoryData === 'object') {
+                                message.memory = memoryData;
+                            }
+                        } catch (e) {
+                            console.warn('无法从content解析memory数据:', e);
+                        }
+                    }
+
+                    // 如果仍然没有memory对象，创建一个基础对象
+                    if (!message.memory) {
+                        message.memory = {
+                            topic: '记忆片段',
+                            question: message.content || '未找到问题',
+                            answer: '未找到答案',
+                            question_hash: message.chunk_id,
+                            created_at: message.created_at
+                        };
+                    }
+                }
+
+                // 对于知识库检索和搜索结果，确保有效数据
+                if ((messageType === 'kg_retrieve' || messageType === 'search_results') && !message.results) {
+                    // 尝试从其他字段获取数据
+                    if (message.results_data) {
+                        message.results = message.results_data;
+                    } else if (message.data) {
+                        message.results = message.data;
+                    }
+                }
+
                 memoryGroups[messageType].push(message);
                 return;
             }
@@ -302,88 +464,112 @@ export default function MessageList() {
             }
         }
 
-        console.log("处理后消息列表:", result);
+        console.log("MessageList最终处理后消息列表数量:", result.length);
         return result;
     }, [messages]);
 
     return (
         <div className="h-full flex flex-col relative">
+            {isLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
+                    <div className="flex flex-col items-center">
+                        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span className="mt-2 text-blue-500">加载消息中...</span>
+                    </div>
+                </div>
+            )}
             <div
                 ref={scrollContainerRef}
                 className="flex-1 overflow-y-auto p-4"
             >
-                <ul className="space-y-4">
-                    {
-                        processedMessages.map((item, index) => {
-                            // 如果是记忆组，使用MemoryGroup组件
-                            if (item.isMemoryGroup) {
-                                return (
-                                    <li key={`memory-group-${index}`}>
-                                        <MemoryGroup
-                                            memories={item.memories}
-                                            chunkType={item.chunkType}
-                                        />
-                                    </li>
-                                );
-                            }
+                {currentThreadId && !isLoading && processedMessages.length === 0 ? (
+                    <div className="flex items-center justify-center h-full">
+                        <div className="text-center text-gray-500">
+                            <p>当前对话还没有消息</p>
+                            <p className="text-sm mt-2">在下方输入框开始对话吧</p>
+                        </div>
+                    </div>
+                ) : (
+                    <ul className="space-y-4">
+                        {
+                            processedMessages.map((item, index) => {
+                                // 如果是记忆组，使用MemoryGroup组件
+                                if (item.isMemoryGroup) {
+                                    return (
+                                        <li key={`memory-group-${index}`}>
+                                            <MemoryGroup
+                                                memories={item.memories}
+                                                chunkType={item.chunkType}
+                                            />
+                                        </li>
+                                    );
+                                }
 
-                            // 否则是普通消息，使用原来的渲染方式
-                            const message = item;
-                            return (
-                                <li
-                                    key={message.dialouge_id}
-                                    className={`group relative ${message.role === 'user' ? 'flex justify-end' : ''}`}
-                                >
-                                    <div
-                                        className={`relative rounded-lg p-1 
-                                        ${selectedMessageIds.includes(message.dialouge_id) ? 'ring-2 ring-blue-400' : ''}`}
+                                // 否则是普通消息，使用原来的渲染方式
+                                const message = item;
+
+                                // 过滤掉title_update类型的消息，它们已经在ChatContext中处理过
+                                if (message.chunk_type === 'title_update') {
+                                    console.log('再次过滤掉title_update消息:', message);
+                                    return null;
+                                }
+
+                                return (
+                                    <li
+                                        key={message.chunk_id}
+                                        className={`group relative ${message.role === 'user' ? 'flex justify-end' : ''}`}
                                     >
                                         <div
-                                            className={`rounded-lg p-1 m-1 ${message.role === 'user' ? 'bg-gray-100 max-w-[100%]' : 'w-full'}`}
+                                            className={`relative rounded-lg p-1 
+                                            ${selectedMessageIds.includes(message.chunk_id) ? 'ring-2 ring-blue-400' : ''}`}
                                         >
-                                            <MarkdownRenderer
-                                                content={message.content}
-                                                className="prose prose-sm max-w-none"
-                                            />
-                                        </div>
-
-                                        <div className={`flex items-center gap-2 mb-1 text-xs ${message.role === 'user' ? 'justify-end' : ''}`}>
-                                            <span className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                {getRelativeTime(message.created_at)}
-                                            </span>
-
-                                            {message.favorite && (
-                                                <span className="text-yellow-500">
-                                                    <FontAwesomeIcon icon={faStar} size="xs" />
-                                                </span>
-                                            )}
-
-                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <CopyButton
+                                            <div
+                                                className={`rounded-lg p-1 m-1 ${message.role === 'user' ? 'bg-gray-100 max-w-[100%]' : 'w-full'}`}
+                                            >
+                                                <MarkdownRenderer
                                                     content={message.content}
-                                                    iconClassName="text-gray-400"
+                                                    className="prose prose-sm max-w-none"
                                                 />
                                             </div>
 
-                                            <button
-                                                className={`cursor-pointer w-5 h-5 rounded-full flex items-center justify-center ml-1
-                                                opacity-0 group-hover:opacity-100 transition-opacity
-                                                ${selectedMessageIds.includes(message.dialouge_id)
-                                                        ? 'bg-blue-600 text-white'
-                                                        : 'bg-gray-200 text-gray-500'}`}
-                                                onClick={() => handleSelectMessage(message.dialouge_id)}
-                                                title="选择消息"
-                                            >
-                                                <FontAwesomeIcon icon={faCheck} className="text-xs" />
-                                            </button>
+                                            <div className={`flex items-center gap-2 mb-1 text-xs ${message.role === 'user' ? 'justify-end' : ''}`}>
+                                                <span className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    {getRelativeTime(message.created_at)}
+                                                </span>
+
+                                                {message.favorite && (
+                                                    <span className="text-yellow-500">
+                                                        <FontAwesomeIcon icon={faStar} size="xs" />
+                                                    </span>
+                                                )}
+
+                                                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <CopyButton
+                                                        content={message.content}
+                                                        iconClassName="text-gray-400"
+                                                    />
+                                                </div>
+
+                                                <button
+                                                    className={`cursor-pointer w-5 h-5 rounded-full flex items-center justify-center ml-1
+                                                    opacity-0 group-hover:opacity-100 transition-opacity
+                                                    ${selectedMessageIds.includes(message.chunk_id)
+                                                            ? 'bg-blue-600 text-white'
+                                                            : 'bg-gray-200 text-gray-500'}`}
+                                                    onClick={() => handleSelectMessage(message.chunk_id)}
+                                                    title="选择消息"
+                                                >
+                                                    <FontAwesomeIcon icon={faCheck} className="text-xs" />
+                                                </button>
+                                            </div>
                                         </div>
-                                    </div>
-                                </li>
-                            );
-                        })
-                    }
-                    <div ref={messagesEndRef} />
-                </ul>
+                                    </li>
+                                );
+                            })
+                        }
+                        <div ref={messagesEndRef} />
+                    </ul>
+                )}
             </div>
 
             {/* 悬浮箭头 */}

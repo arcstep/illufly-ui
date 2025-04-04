@@ -4,7 +4,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faComments, faBook, faMemory } from '@fortawesome/free-solid-svg-icons';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import UserMenu from '../Auth/UserMenu';
-import { useSettings } from '@/context/SettingsContext';
 import { useRef } from 'react';
 
 interface HeaderProps {
@@ -14,7 +13,6 @@ interface HeaderProps {
 
 export default function Header({ username, onLogout }: HeaderProps) {
     const pathname = usePathname();
-    const { settings } = useSettings();
     const headerRef = useRef<HTMLElement>(null);
 
     // 使用固定尺寸的样式

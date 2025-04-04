@@ -3,13 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faCheck,
     faStar,
-    faCopy,
     faArrowDown,
-    faChevronDown,
-    faChevronUp,
-    faMemory,
-    faBook,
-    faSearch,
     faVolumeUp,
     faPause,
     faSpinner

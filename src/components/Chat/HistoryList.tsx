@@ -1,15 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faSpinner, faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 import { useChat } from '@/context/ChatContext';
-
-interface Thread {
-    user_id: string;
-    thread_id: string;
-    title: string;
-    created_at: number;
-    dialogue_count?: number;
-}
 
 interface HistoryListProps {
     onCollapseChange?: (isCollapsed: boolean) => void;

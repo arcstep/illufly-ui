@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPaperclip, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { useChat } from '@/context/ChatContext';
-import { useSettings } from '@/context/SettingsContext';
 
 interface FileItem {
     id: string;
@@ -13,7 +12,6 @@ interface FileItem {
 
 export default function MessageInput() {
     const { ask } = useChat();
-    const { settings } = useSettings();
     const [message, setMessage] = useState<string>('');
     const [files, setFiles] = useState<FileItem[]>([]);
     const [isDragging, setIsDragging] = useState<boolean>(false);

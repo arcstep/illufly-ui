@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import { faUpload, faSearch, faTrash, faBook, faFileAlt } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '@/context/AuthContext';
 import { useDocument } from '@/context/DocumentContext';
+import { DocumentProvider } from '@/context/DocumentContext';
 
-export default function DocsPage() {
+function DocsPageContent() {
     const { changeCurrentPath } = useAuth();
     const {
         documents,
@@ -157,5 +158,16 @@ export default function DocsPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+// 外层组件提供 DocumentProvider
+export default function DocsPage() {
+    return (
+        <Suspense fallback={<div>正在加载文档页面...</div>}>
+            <DocumentProvider>
+                <DocsPageContent />
+            </DocumentProvider>
+        </Suspense>
     );
 } 

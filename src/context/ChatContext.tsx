@@ -87,6 +87,12 @@ interface ChatContextType {
 
     // 切换收藏状态
     toggleFavorite: (requestId: string) => Promise<void>
+
+    // 是否正在处理请求
+    isProcessing: boolean
+
+    // 取消当前处理的请求
+    cancelProcessing: () => void
 }
 
 // 创建 Context
@@ -100,6 +106,8 @@ const ChatContext = createContext<ChatContextType>({
     ask: async () => { throw new Error('ChatProvider not found') },
     toggleFavorite: async () => { throw new Error('ChatProvider not found') },
     switchThread: async () => { throw new Error('ChatProvider not found') },
+    isProcessing: false,
+    cancelProcessing: () => { throw new Error('ChatProvider not found') },
 })
 
 // Provider 组件
@@ -109,6 +117,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     const [lastChunks, setLastChunks] = useState<Message[]>([])
     const [archivedMessages, setArchivedMessages] = useState<Message[]>([])
     const [pendingMessages, setPendingMessages] = useState<Message[]>([])
+    const [isProcessing, setIsProcessing] = useState<boolean>(false)
 
     // 使用ref保存正在处理的线程ID，用于检测是否有并发切换操作
     const processingThreadRef = useRef<string | null>(null)
@@ -624,6 +633,9 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     const ask = async (content: string) => {
         if (!currentThreadId) return
 
+        // 设置处理中状态
+        setIsProcessing(true)
+
         // 重置状态
         setLastChunks([])
 
@@ -664,6 +676,9 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
             }
 
             activeMessagesRef.current.clear();
+
+            // 完成后设置处理状态为false
+            setIsProcessing(false);
         }
 
         try {
@@ -683,13 +698,16 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
                 onopen: async (response) => {
                     // 检查登录状态
                     if (handleAuthError(response.status)) {
+                        setIsProcessing(false);
                         throw new Error('认证错误已处理')
                     }
 
                     if (response.status !== 200 || !response.ok) {
+                        setIsProcessing(false);
                         throw new Error(`请求失败: ${response.status}`)
                     }
                     if (!response.body) {
+                        setIsProcessing(false);
                         throw new Error('没有响应体')
                     }
                     return
@@ -853,6 +871,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
                 },
                 onerror(err) {
                     console.error('SSE 错误:', err)
+                    setIsProcessing(false)
                     throw err
                 },
             })
@@ -866,6 +885,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
             }
         } finally {
             abortController.abort()
+            setIsProcessing(false)
         }
     }
 
@@ -975,6 +995,11 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
+    // 取消处理中的请求，用于取消等待状态
+    const cancelProcessing = () => {
+        setIsProcessing(false);
+    }
+
     return (
         <ChatContext.Provider value={{
             currentThreadId,
@@ -986,6 +1011,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
             loadAllThreads,
             ask,
             toggleFavorite,
+            isProcessing,
+            cancelProcessing,
         }}>
             {children}
         </ChatContext.Provider>

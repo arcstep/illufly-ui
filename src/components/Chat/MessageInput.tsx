@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPaperclip, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faPaperclip, faTrash, faExclamationTriangle, faRedo } from '@fortawesome/free-solid-svg-icons';
 import { useChat } from '@/context/ChatContext';
 
 interface FileItem {
@@ -11,10 +11,13 @@ interface FileItem {
 }
 
 export default function MessageInput() {
-    const { ask } = useChat();
+    const { ask, isProcessing, cancelProcessing } = useChat();
     const [message, setMessage] = useState<string>('');
     const [files, setFiles] = useState<FileItem[]>([]);
     const [isDragging, setIsDragging] = useState<boolean>(false);
+    const [isSending, setIsSending] = useState<boolean>(false);
+    const [sendError, setSendError] = useState<string | null>(null);
+    const [lastFailedMessage, setLastFailedMessage] = useState<string>('');
     const fileInputRef = useRef<HTMLInputElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [showFileUpload, setShowFileUpload] = useState<boolean>(false);
@@ -26,6 +29,14 @@ export default function MessageInput() {
         scrollbarWidth: 'thin' as const,
         scrollbarColor: '#cbd5e0 #f7fafc',
     };
+
+    // 使用useEffect监听全局处理状态，确保本地状态与全局状态同步
+    useEffect(() => {
+        // 如果全局状态显示不在处理中，但本地状态仍在发送中，则同步
+        if (!isProcessing && isSending) {
+            setIsSending(false);
+        }
+    }, [isProcessing, isSending]);
 
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFiles = event.target.files;
@@ -76,13 +87,70 @@ export default function MessageInput() {
         event.preventDefault();
         if (!message.trim() && files.length === 0) return;
 
+        // 清除之前的错误
+        setSendError(null);
+        setIsSending(true);
+
+        // 保存当前消息文本，以便发送和可能的重试
+        const currentMessage = message;
+        setLastFailedMessage(currentMessage);
+
+        // 立即清空输入框，提高用户体验
+        setMessage('');
+        setFiles([]);
+
         try {
-            await ask(message);
-            setMessage('');
-            setFiles([]);
+            await ask(currentMessage);
+            // 清空上次失败的消息记录
+            setLastFailedMessage('');
         } catch (error) {
             console.error('Error sending message:', error);
+            if (error instanceof Error) {
+                setSendError(`发送失败: ${error.message}`);
+            } else {
+                setSendError('发送失败，请检查网络连接后重试');
+            }
+            // 已经保存消息到lastFailedMessage，方便用户重试
+        } finally {
+            setIsSending(false);
         }
+    };
+
+    // 重试发送上一条失败的消息
+    const handleRetry = async () => {
+        if (!lastFailedMessage && !message) return;
+
+        const messageToRetry = lastFailedMessage || message;
+        setSendError(null);
+        setIsSending(true);
+
+        // 如果用户输入框有内容，先保存起来
+        if (message) {
+            setLastFailedMessage(message);
+        }
+
+        // 清空输入框
+        setMessage('');
+
+        try {
+            await ask(messageToRetry);
+            // 成功后清空失败消息记录
+            setLastFailedMessage('');
+        } catch (error) {
+            console.error('Error retrying message:', error);
+            if (error instanceof Error) {
+                setSendError(`重试失败: ${error.message}`);
+            } else {
+                setSendError('重试失败，请检查网络连接');
+            }
+        } finally {
+            setIsSending(false);
+        }
+    };
+
+    // 清除错误并重置状态
+    const clearError = () => {
+        setSendError(null);
     };
 
     const handleKeyDown = (event: React.KeyboardEvent) => {
@@ -115,6 +183,32 @@ export default function MessageInput() {
 
     return (
         <form onSubmit={handleSubmit} className="p-4">
+            {sendError && (
+                <div className="mb-2 p-2 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-sm flex justify-between items-center">
+                    <div className="flex items-center">
+                        <FontAwesomeIcon icon={faExclamationTriangle} className="mr-2" />
+                        <span>{sendError}</span>
+                    </div>
+                    <div className="flex gap-2">
+                        <button
+                            type="button"
+                            onClick={handleRetry}
+                            className="px-2 py-1 text-xs bg-red-100 dark:bg-red-800 text-red-700 dark:text-red-200 rounded hover:bg-red-200 dark:hover:bg-red-700"
+                        >
+                            <FontAwesomeIcon icon={faRedo} className="mr-1" />
+                            重试
+                        </button>
+                        <button
+                            type="button"
+                            onClick={clearError}
+                            className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                        >
+                            关闭
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <div className="flex items-end gap-2">
                 <div className="flex-1 relative">
                     <textarea
@@ -126,22 +220,24 @@ export default function MessageInput() {
                         className="w-full min-h-[40px] max-h-[200px] p-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 overflow-y-auto"
                         rows={1}
                         style={textareaStyle}
+                        disabled={isSending || isProcessing}
                     />
                     <button
                         type="button"
                         onClick={() => setShowFileUpload(!showFileUpload)}
                         className="absolute right-2 bottom-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                        disabled={isSending || isProcessing}
                     >
                         <FontAwesomeIcon icon={faPaperclip} />
                     </button>
                 </div>
                 <button
                     type="submit"
-                    disabled={!message.trim() && files.length === 0}
+                    disabled={(!message.trim() && files.length === 0) || isSending || isProcessing}
                     className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors"
                     style={{ fontSize: '16px' }}
                 >
-                    发送
+                    {isSending || isProcessing ? '发送中...' : '发送'}
                 </button>
             </div>
 

@@ -6,7 +6,8 @@ import {
     faArrowDown,
     faVolumeUp,
     faPause,
-    faSpinner
+    faSpinner,
+    faTimes
 } from '@fortawesome/free-solid-svg-icons';
 import MarkdownRenderer from '../Common/MarkdownRenderer';
 import CopyButton from '../Common/CopyButton';
@@ -105,7 +106,7 @@ interface MemoryChunkIds {
 }
 
 export default function MessageList() {
-    const { messages, currentThreadId } = useChat();
+    const { messages, currentThreadId, isProcessing, cancelProcessing } = useChat();
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
@@ -113,6 +114,8 @@ export default function MessageList() {
     const [isAtBottom, setIsAtBottom] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
     const [isWaitingResponse, setIsWaitingResponse] = useState(false);
+    const waitingTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const [waitingDuration, setWaitingDuration] = useState(0);
 
     // 检查是否在底部
     const checkIfAtBottom = () => {
@@ -152,9 +155,44 @@ export default function MessageList() {
         }
     }, []);
 
+    // 更新等待响应计时器
+    useEffect(() => {
+        if (isWaitingResponse) {
+            // 每秒更新等待时间
+            const timer = setInterval(() => {
+                setWaitingDuration(prev => prev + 1);
+
+                // 如果等待时间超过30秒，可能是网络问题或后端未响应
+                if (waitingDuration > 30) {
+                    console.log("等待响应时间过长，可能存在网络问题");
+                }
+            }, 1000);
+
+            return () => clearInterval(timer);
+        } else {
+            // 重置等待时间
+            setWaitingDuration(0);
+        }
+    }, [isWaitingResponse, waitingDuration]);
+
+    // 同步等待状态与全局处理状态
+    useEffect(() => {
+        // 如果全局处理状态结束，但本地仍在等待，则取消等待
+        if (!isProcessing && isWaitingResponse) {
+            console.log("全局处理状态已结束，自动取消等待状态");
+            setIsWaitingResponse(false);
+        }
+    }, [isProcessing, isWaitingResponse]);
+
     // 修改消息监控效果，检测是否正在等待服务器响应
     useEffect(() => {
         console.log(`MessageList检测到线程/消息变化: 线程=${currentThreadId}, 消息数量=${messages.length}`);
+
+        // 清除之前的定时器
+        if (waitingTimerRef.current) {
+            clearTimeout(waitingTimerRef.current);
+            waitingTimerRef.current = null;
+        }
 
         if (currentThreadId) {
             setIsLoading(true);
@@ -170,12 +208,38 @@ export default function MessageList() {
                     const lastAssistantMsg = assistantMessages[assistantMessages.length - 1];
 
                     if (lastUserMsg.created_at > lastAssistantMsg.created_at) {
-                        setIsWaitingResponse(true);
+                        // 如果最后一条用户消息的创建时间超过3分钟，则不再显示等待状态
+                        const threeMinutesAgo = Date.now() / 1000 - 180; // 3分钟前(秒级时间戳)
+                        if (lastUserMsg.created_at < threeMinutesAgo) {
+                            console.log("检测到超过3分钟的未回复用户消息，不再显示等待状态");
+                            setIsWaitingResponse(false);
+                        } else {
+                            setIsWaitingResponse(true);
+                            // 设置2分钟后自动关闭等待状态
+                            waitingTimerRef.current = setTimeout(() => {
+                                console.log("等待响应超时，自动关闭等待状态");
+                                setIsWaitingResponse(false);
+                            }, 120000); // 2分钟
+                        }
                     } else {
                         setIsWaitingResponse(false);
                     }
                 } else if (userMessages.length > 0 && assistantMessages.length === 0) {
-                    setIsWaitingResponse(true);
+                    // 检查最后一条用户消息的创建时间
+                    const lastUserMsg = userMessages[userMessages.length - 1];
+                    const twoMinutesAgo = Date.now() / 1000 - 120; // 2分钟前(秒级时间戳)
+
+                    if (lastUserMsg.created_at < twoMinutesAgo) {
+                        console.log("检测到超过2分钟的未回复用户消息，不再显示等待状态");
+                        setIsWaitingResponse(false);
+                    } else {
+                        setIsWaitingResponse(true);
+                        // 设置2分钟后自动关闭等待状态
+                        waitingTimerRef.current = setTimeout(() => {
+                            console.log("等待响应超时，自动关闭等待状态");
+                            setIsWaitingResponse(false);
+                        }, 120000); // 2分钟
+                    }
                 } else {
                     setIsWaitingResponse(false);
                 }
@@ -185,8 +249,19 @@ export default function MessageList() {
                 }, 100);
             }, 300);
 
-            return () => clearTimeout(timer);
+            return () => {
+                clearTimeout(timer);
+                if (waitingTimerRef.current) {
+                    clearTimeout(waitingTimerRef.current);
+                }
+            };
         }
+
+        return () => {
+            if (waitingTimerRef.current) {
+                clearTimeout(waitingTimerRef.current);
+            }
+        };
     }, [currentThreadId, messages.length]);
 
     // 监听消息变化，自动滚动到底部
@@ -406,6 +481,21 @@ export default function MessageList() {
         return result;
     }, [messages]);
 
+    // 手动取消等待状态
+    const cancelWaiting = () => {
+        console.log("用户手动取消等待状态");
+        setIsWaitingResponse(false);
+
+        // 同时取消全局处理状态
+        cancelProcessing();
+
+        if (waitingTimerRef.current) {
+            clearTimeout(waitingTimerRef.current);
+            waitingTimerRef.current = null;
+        }
+        setWaitingDuration(0);
+    };
+
     return (
         <div className="h-full flex flex-col relative">
             <div
@@ -501,7 +591,21 @@ export default function MessageList() {
                                 </li>
                             );
                         })}
-                        {isWaitingResponse && <ResponseWaitingIndicator />}
+                        {isWaitingResponse && (
+                            <li className="relative">
+                                <ResponseWaitingIndicator />
+                                {waitingDuration > 15 && (
+                                    <button
+                                        onClick={cancelWaiting}
+                                        className="absolute bottom-0 right-0 text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 bg-white dark:bg-gray-800 rounded-full p-1 shadow"
+                                        title="取消等待"
+                                    >
+                                        <FontAwesomeIcon icon={faTimes} />
+                                        <span className="ml-1">取消</span>
+                                    </button>
+                                )}
+                            </li>
+                        )}
                         <div ref={messagesEndRef} />
                     </ul>
                 )}

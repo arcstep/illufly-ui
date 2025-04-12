@@ -62,7 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (typeof window === 'undefined') return;
 
         // 不在登录页等页面执行
-        if (noAuthPaths.includes(pathname)) {
+        if (noAuthPaths.includes(pathname || '')) {
             setIsLoading(false);
             return;
         }
@@ -162,7 +162,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsAuthenticated(true)
 
         // 登录后重定向
-        const from = searchParams.get('from') || '/chat'
+        const from = searchParams?.get('from') || '/chat'
         router.replace(from)
     }
 
@@ -184,7 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setCurrentPath(path)
     }
 
-    if (isLoading && !noAuthPaths.includes(pathname)) {
+    if (isLoading && !noAuthPaths.includes(pathname || '')) {
         return <div>Loading...</div>
     }
 

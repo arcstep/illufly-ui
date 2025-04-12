@@ -6,6 +6,7 @@ import { createContext, useState, useContext, useEffect, ReactNode } from 'react
 interface Settings {
     fontSize: number;
     theme: 'light' | 'dark';
+    autoPlayTTS: boolean;
 }
 
 // 定义上下文类型
@@ -13,6 +14,7 @@ interface SettingsContextType {
     settings: Settings;
     updateFontSize: (size: number) => void;
     updateTheme: (theme: 'light' | 'dark') => void;
+    updateAutoPlayTTS: (autoPlay: boolean) => void;
 }
 
 // 创建上下文
@@ -30,7 +32,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         }
         return {
             fontSize: 14,
-            theme: 'light'
+            theme: 'light',
+            autoPlayTTS: false
         };
     });
 
@@ -55,11 +58,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setSettings(prev => ({ ...prev, theme }));
     };
 
+    const updateAutoPlayTTS = (autoPlay: boolean) => {
+        setSettings(prev => ({ ...prev, autoPlayTTS: autoPlay }));
+    };
+
     return (
         <SettingsContext.Provider value={{
             settings,
             updateFontSize,
-            updateTheme
+            updateTheme,
+            updateAutoPlayTTS
         }}>
             {children}
         </SettingsContext.Provider>

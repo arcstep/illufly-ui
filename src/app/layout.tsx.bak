@@ -21,11 +21,11 @@ export default function RootLayout({
         <html lang="zh" suppressHydrationWarning>
             <body className={`${inter.className} antialiased`}>
                 <AuthProvider>
-                    <SettingsProvider>
-                        <TTSProvider>
+                    <TTSProvider>
+                        <SettingsProvider>
                             {children}
-                        </TTSProvider>
-                    </SettingsProvider>
+                        </SettingsProvider>
+                    </TTSProvider>
                 </AuthProvider>
             </body>
         </html>

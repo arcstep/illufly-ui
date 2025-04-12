@@ -16,6 +16,7 @@ import { getRelativeTime } from '@/utils/time';
 import MemoryGroup from '@/components/Memory/MemoryGroup';
 import ResponseWaitingIndicator from './ResponseWaitingIndicator';
 import { useTTS } from '@/context/TTSContext';
+import { useSettings } from '@/context/SettingsContext';
 
 interface AudioPlayButtonProps {
     content: string;
@@ -24,6 +25,7 @@ interface AudioPlayButtonProps {
 // 语音播放按钮组件
 function AudioPlayButton({ content }: AudioPlayButtonProps) {
     const { isPlaying, isLoading, playAudio, stopAudio } = useTTS();
+    const { settings } = useSettings(); // 获取设置
 
     const handleClick = async () => {
         if (isPlaying) {
@@ -36,8 +38,9 @@ function AudioPlayButton({ content }: AudioPlayButtonProps) {
     return (
         <button
             onClick={handleClick}
-            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
-            title={isPlaying ? '暂停播放' : '播放语音'}
+            className={`text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 
+                      ${settings.autoPlayTTS ? 'border-b border-blue-500 dark:border-blue-400' : ''}`}
+            title={isPlaying ? '暂停播放' : (settings.autoPlayTTS ? '自动播放已开启' : '播放语音')}
         >
             <FontAwesomeIcon
                 icon={isLoading ? faSpinner : (isPlaying ? faPause : faVolumeUp)}
@@ -152,6 +155,9 @@ export default function MessageList() {
         if (container) {
             container.addEventListener('scroll', handleScroll);
             return () => container.removeEventListener('scroll', handleScroll);
+        } else {
+            console.warn('scrollContainerRef.current 为空');
+            return;
         }
     }, []);
 
@@ -172,6 +178,7 @@ export default function MessageList() {
         } else {
             // 重置等待时间
             setWaitingDuration(0);
+            return;
         }
     }, [isWaitingResponse, waitingDuration]);
 

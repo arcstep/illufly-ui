@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, JSX } from 'react';
 import { useSettings } from '@/context/SettingsContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFont, faSun, faMoon } from '@fortawesome/free-solid-svg-icons';
+import { faFont, faSun, faMoon, faVolumeUp, faVolumeMute } from '@fortawesome/free-solid-svg-icons';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 
 interface UserMenuProps {
@@ -15,7 +15,7 @@ export default function UserMenu({ username, onLogout }: UserMenuProps): JSX.Ele
     const [displayName, setDisplayName] = useState('');
     const [tempFontSize, setTempFontSize] = useState<number | null>(null);
     const menuRef = useRef<HTMLDivElement>(null);
-    const { settings, updateFontSize, updateTheme } = useSettings();
+    const { settings, updateFontSize, updateTheme, updateAutoPlayTTS } = useSettings();
 
     // 固定样式
     const rootStyle = {
@@ -94,18 +94,31 @@ export default function UserMenu({ username, onLogout }: UserMenuProps): JSX.Ele
         setIsFontSettingVisible(false);
     };
 
+    // 添加切换自动播放语音的处理函数
+    const toggleAutoPlayTTS = () => {
+        updateAutoPlayTTS(!settings.autoPlayTTS);
+        setIsUserMenuVisible(false);
+    };
+
     return (
-        <div className="relative" ref={menuRef} style={rootStyle}>
+        <div className="relative flex items-center" ref={menuRef} style={rootStyle}>
+            {/* 自动播放状态指示器 */}
+            {settings.autoPlayTTS && (
+                <div className="mr-2 flex items-center text-blue-500 dark:text-blue-400 rounded-full p-1" title="自动播放语音已开启">
+                    <FontAwesomeIcon icon={faVolumeUp as IconProp} size="xs" />
+                </div>
+            )}
+
             <button
                 onClick={() => setIsUserMenuVisible(!isUserMenuVisible)}
-                className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700"
+                className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center"
                 title={username}
                 style={menuButtonStyle}
             >
                 {displayName}
             </button>
             {isUserMenuVisible && (
-                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50">
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50 top-full">
                     <div
                         className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer flex items-center justify-between"
                         onClick={toggleFontSetting}
@@ -151,6 +164,19 @@ export default function UserMenu({ username, onLogout }: UserMenuProps): JSX.Ele
                         <FontAwesomeIcon
                             icon={settings.theme === 'light' ? faMoon as IconProp : faSun as IconProp}
                             className="text-gray-400 dark:text-gray-500"
+                        />
+                    </div>
+
+                    <div
+                        className={`px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer flex items-center justify-between ${settings.autoPlayTTS ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                            }`}
+                        onClick={toggleAutoPlayTTS}
+                        style={menuItemStyle}
+                    >
+                        <span>{settings.autoPlayTTS ? '关闭自动播放语音' : '开启自动播放语音'}</span>
+                        <FontAwesomeIcon
+                            icon={(settings.autoPlayTTS ? faVolumeUp : faVolumeMute) as IconProp}
+                            className={`${settings.autoPlayTTS ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}`}
                         />
                     </div>
 

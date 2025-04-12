@@ -2,12 +2,14 @@
 
 import { createContext, useContext, useState, useRef, useEffect } from 'react';
 import { API_BASE_URL } from '@/utils/config';
+import { useSettings } from '@/context/SettingsContext';
 
 interface TTSContextType {
     isPlaying: boolean;
     isLoading: boolean;
     playAudio: (text: string) => Promise<void>;
     stopAudio: () => void;
+    processStreamingText: (text: string) => void;
 }
 
 interface TTSResponse {
@@ -28,6 +30,9 @@ export const TTSContext = createContext<TTSContextType>({
     stopAudio: () => {
         throw new Error('TTSProvider not found');
     },
+    processStreamingText: () => {
+        throw new Error('TTSProvider not found');
+    },
 });
 
 export function TTSProvider({ children }: { children: React.ReactNode }) {
@@ -44,6 +49,11 @@ export function TTSProvider({ children }: { children: React.ReactNode }) {
     const playbackStarted = useRef<boolean>(false);
     const isStopped = useRef<boolean>(false);
     const playSequence = useRef<number[]>([]);
+
+    // 新增流式文本缓冲区和计时器
+    const streamBuffer = useRef<string>('');
+    const streamTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const { settings } = useSettings(); // 导入设置
 
     // 分割文本为句子数组
     const splitText = (text: string): string[] => {
@@ -96,10 +106,46 @@ export function TTSProvider({ children }: { children: React.ReactNode }) {
         playSequence.current = [];
     };
 
+    // 仅重置播放状态，保留缓冲区
+    const resetPlaybackState = () => {
+        // 清理所有音频资源
+        Object.values(audioObjects.current).forEach(audio => {
+            try {
+                audio.pause();
+                audio.onended = null;
+                audio.onerror = null;
+                if (audio.src.startsWith('blob:')) {
+                    URL.revokeObjectURL(audio.src);
+                }
+            } catch (e) {
+                console.error('TTS: 清理音频资源时出错:', e);
+            }
+        });
+
+        // 重置播放相关状态引用，但不清空缓冲区
+        audioObjects.current = {};
+        pendingIndices.current.clear();
+        readyIndices.current.clear();
+        playingIndex.current = null;
+        audioCount.current = 0;
+        totalAudioCount.current = 0;
+        playbackStarted.current = false;
+        isStopped.current = false;
+        playSequence.current = [];
+    };
+
     // 尝试按顺序播放下一个音频
     const playNextInSequence = () => {
-        if (isStopped.current || playingIndex.current !== null) {
-            return; // 已停止或当前有音频正在播放
+        // 检查是否停止状态
+        if (isStopped.current) {
+            console.log(`TTS: 播放已被停止，重置停止状态准备新播放`);
+            isStopped.current = false; // 重置停止状态，以便开始新的播放序列
+        }
+
+        // 检查是否已有音频在播放
+        if (playingIndex.current !== null) {
+            console.log(`TTS: 当前已有音频正在播放: ${playingIndex.current + 1}/${totalAudioCount.current}`);
+            return; // 已有音频正在播放
         }
 
         // 找到下一个待播放的索引
@@ -128,6 +174,12 @@ export function TTSProvider({ children }: { children: React.ReactNode }) {
                 // 清除当前播放索引
                 playingIndex.current = null;
 
+                // 检查是否被停止
+                if (isStopped.current) {
+                    console.log(`TTS: 检测到已停止状态，不继续播放后续音频`);
+                    return;
+                }
+
                 // 检查是否所有音频都已播放完毕
                 const allPlayed = playSequence.current.every(idx =>
                     !readyIndices.current.has(idx) || audioObjects.current[idx]?._played
@@ -151,6 +203,12 @@ export function TTSProvider({ children }: { children: React.ReactNode }) {
                 audio._played = true;
                 // 清除当前播放索引
                 playingIndex.current = null;
+
+                // 检查是否被停止
+                if (isStopped.current) {
+                    return;
+                }
+
                 // 继续播放序列中的下一个
                 setTimeout(() => playNextInSequence(), 50);
             };
@@ -171,19 +229,31 @@ export function TTSProvider({ children }: { children: React.ReactNode }) {
                                         console.error('TTS: 二次尝试播放失败:', e);
                                         audio._played = true;
                                         playingIndex.current = null;
-                                        setTimeout(() => playNextInSequence(), 50);
+
+                                        // 检查是否被停止
+                                        if (!isStopped.current) {
+                                            setTimeout(() => playNextInSequence(), 50);
+                                        }
                                     });
                                 } catch (playError) {
                                     console.error('TTS: 播放时出现异常:', playError);
                                     audio._played = true;
                                     playingIndex.current = null;
-                                    setTimeout(() => playNextInSequence(), 50);
+
+                                    // 检查是否被停止
+                                    if (!isStopped.current) {
+                                        setTimeout(() => playNextInSequence(), 50);
+                                    }
                                 }
                             }, 200);
                         } else {
                             audio._played = true;
                             playingIndex.current = null;
-                            setTimeout(() => playNextInSequence(), 50);
+
+                            // 检查是否被停止
+                            if (!isStopped.current) {
+                                setTimeout(() => playNextInSequence(), 50);
+                            }
                         }
                     });
                 }
@@ -191,7 +261,11 @@ export function TTSProvider({ children }: { children: React.ReactNode }) {
                 console.error('TTS: 播放尝试出现异常:', e);
                 audio._played = true;
                 playingIndex.current = null;
-                setTimeout(() => playNextInSequence(), 50);
+
+                // 检查是否被停止
+                if (!isStopped.current) {
+                    setTimeout(() => playNextInSequence(), 50);
+                }
             }
         } else {
             // 当前没有准备好可播放的音频
@@ -336,8 +410,11 @@ export function TTSProvider({ children }: { children: React.ReactNode }) {
                 await new Promise(resolve => setTimeout(resolve, 200));
             }
 
-            // 重置所有状态
+            // 重置所有状态但保留缓冲区
+            const oldBuffer = streamBuffer.current;
             resetState();
+            streamBuffer.current = oldBuffer;
+
             setIsLoading(true);
             setIsPlaying(true);
 
@@ -381,7 +458,7 @@ export function TTSProvider({ children }: { children: React.ReactNode }) {
                         console.log(`TTS: 超时检查，但第一个音频尚未准备好，继续等待`);
                     }
                     resolve();
-                }, 2000); // 2秒超时
+                }, 1000); // 超时时间缩短到1秒
             });
 
             // 等待所有处理完成或超时
@@ -422,6 +499,180 @@ export function TTSProvider({ children }: { children: React.ReactNode }) {
         setIsPlaying(false);
     };
 
+    // 新增流式处理方法
+    const processStreamingText = (text: string) => {
+        // 如果未启用自动播放，直接返回
+        if (!settings.autoPlayTTS) return;
+
+        console.log(`TTS流式处理: 收到文本(${text.length}字): ${text.substring(0, 20)}${text.length > 20 ? '...' : ''}`);
+
+        // 把新文本添加到缓冲区
+        streamBuffer.current += text;
+
+        // 防抖处理，降低到100ms使其更快响应
+        if (streamTimerRef.current) {
+            clearTimeout(streamTimerRef.current);
+        }
+
+        streamTimerRef.current = setTimeout(() => {
+            const fullText = streamBuffer.current;
+            console.log(`TTS流式处理: 缓冲区文本(${fullText.length}字): ${fullText.substring(0, 30)}${fullText.length > 30 ? '...' : ''}`);
+
+            // 更激进的处理策略: 
+            // 1. 如果有完整句子，优先处理完整句子
+            // 2. 如果没有完整句子但积累了足够多的字符，也进行处理
+            if (fullText.match(/[。！？.!?]/) || fullText.length > 30) {
+
+                // 尝试分割成句子
+                const sentences = splitText(fullText);
+                console.log(`TTS流式处理: 分割为${sentences.length}个句子`);
+
+                if (sentences.length > 0) {
+                    // 只保留最后一个可能不完整的句子
+                    const lastSentence = sentences[sentences.length - 1];
+                    const sentenceEndRegex = /[。！？.!?]$/;
+                    const lastIsComplete = sentenceEndRegex.test(lastSentence);
+
+                    // 处理策略分支
+                    if (sentences.length > 1 || lastIsComplete) {
+                        // 有完整句子可以处理
+                        let textToProcess;
+
+                        if (!lastIsComplete && sentences.length > 1) {
+                            // 保留最后不完整的句子在缓冲区
+                            textToProcess = sentences.slice(0, -1).join(' ');
+                            streamBuffer.current = lastSentence;
+                            console.log(`TTS流式处理: 处理完整句子，保留未完成句子: ${lastSentence.substring(0, 20)}${lastSentence.length > 20 ? '...' : ''}`);
+                        } else {
+                            // 所有句子都完整
+                            textToProcess = fullText;
+                            streamBuffer.current = '';
+                            console.log(`TTS流式处理: 处理所有句子，清空缓冲区`);
+                        }
+
+                        // 处理可播放的文本
+                        if (textToProcess && textToProcess.trim().length > 0) {
+                            // 不以isPlaying为准，只要有新内容就创建新音频
+                            console.log(`TTS流式处理: 发送文本到TTS API: ${textToProcess.substring(0, 30)}${textToProcess.length > 30 ? '...' : ''}`);
+
+                            // 分离创建一个单独的异步处理
+                            (async () => {
+                                try {
+                                    if (isPlaying) {
+                                        console.log('TTS流式处理: 当前有音频正在播放，优雅地打断');
+                                        // 标记当前播放为终止状态，但不立即中断
+                                        // 在下一个音频准备好时会自动切换
+                                        isStopped.current = true;
+                                        // 给时间让当前播放逻辑感知到停止状态
+                                        await new Promise(resolve => setTimeout(resolve, 50));
+                                    }
+
+                                    // 重置播放状态但保留缓冲区
+                                    let oldStreamBuffer = streamBuffer.current;
+                                    resetPlaybackState();
+                                    streamBuffer.current = oldStreamBuffer;
+
+                                    // 初始化新的播放
+                                    console.log('TTS流式处理: 开始处理新的音频播放');
+                                    setIsLoading(true);
+                                    setIsPlaying(true);
+
+                                    // 分割要处理的文本
+                                    const textSentences = splitText(textToProcess);
+                                    const total = textSentences.length;
+                                    console.log(`TTS流式处理: 文本已分割为 ${total} 个句子`);
+
+                                    // 设置总音频数量
+                                    totalAudioCount.current = total;
+                                    // 创建播放序列
+                                    playSequence.current = Array.from({ length: total }, (_, i) => i);
+
+                                    // 为每个句子创建处理任务
+                                    const promises = textSentences.map((sentence, i) =>
+                                        processAudioData(sentence, i).catch(err => {
+                                            console.error(`TTS流式处理: 句子处理异常 (${i + 1}/${total}):`, err);
+                                            return Promise.resolve();
+                                        })
+                                    );
+
+                                    // 设置较短的超时启动播放
+                                    setTimeout(() => {
+                                        if (!playbackStarted.current && readyIndices.current.size > 0) {
+                                            console.log(`TTS流式处理: 快速开始播放已准备好的 ${readyIndices.current.size} 个音频`);
+                                            playbackStarted.current = true;
+                                            playNextInSequence();
+                                        }
+                                    }, 300);
+
+                                    // 等待所有处理完成
+                                    await Promise.all(promises);
+                                    setIsLoading(false);
+
+                                } catch (error) {
+                                    console.error('TTS流式处理: 错误:', error);
+                                    setIsLoading(false);
+                                }
+                            })();
+                        }
+                    } else if (lastSentence.length > 50) {
+                        // 特殊情况: 单句过长但没有标点，强制处理
+                        console.log(`TTS流式处理: 单句过长(${lastSentence.length}字)但无标点，强制处理`);
+                        const textToProcess = lastSentence;
+                        streamBuffer.current = '';
+
+                        (async () => {
+                            try {
+                                if (isPlaying) {
+                                    console.log('TTS流式处理: 当前有音频正在播放，优雅地打断');
+                                    isStopped.current = true;
+                                    await new Promise(resolve => setTimeout(resolve, 50));
+                                }
+
+                                resetPlaybackState();
+                                console.log('TTS流式处理: 开始处理长句音频');
+                                setIsLoading(true);
+                                setIsPlaying(true);
+
+                                // 手动切分长句为短句
+                                const shortSentences = [];
+                                let start = 0;
+                                while (start < textToProcess.length) {
+                                    const end = Math.min(start + 20, textToProcess.length);
+                                    shortSentences.push(textToProcess.substring(start, end));
+                                    start = end;
+                                }
+
+                                totalAudioCount.current = shortSentences.length;
+                                playSequence.current = Array.from({ length: shortSentences.length }, (_, i) => i);
+
+                                const promises = shortSentences.map((sentence, i) =>
+                                    processAudioData(sentence, i).catch(err => {
+                                        console.error(`TTS流式处理: 长句分段处理异常 (${i + 1}/${shortSentences.length}):`, err);
+                                        return Promise.resolve();
+                                    })
+                                );
+
+                                setTimeout(() => {
+                                    if (!playbackStarted.current && readyIndices.current.size > 0) {
+                                        playbackStarted.current = true;
+                                        playNextInSequence();
+                                    }
+                                }, 300);
+
+                                await Promise.all(promises);
+                                setIsLoading(false);
+
+                            } catch (error) {
+                                console.error('TTS流式处理: 长句处理错误:', error);
+                                setIsLoading(false);
+                            }
+                        })();
+                    }
+                }
+            }
+        }, 100); // 降低防抖时间到100ms
+    };
+
     // 在组件卸载时清理资源
     useEffect(() => {
         return () => {
@@ -435,11 +686,22 @@ export function TTSProvider({ children }: { children: React.ReactNode }) {
                     console.error('TTS: 清理音频资源时出错:', e);
                 }
             });
+
+            // 清理定时器
+            if (streamTimerRef.current) {
+                clearTimeout(streamTimerRef.current);
+            }
         };
     }, []);
 
     return (
-        <TTSContext.Provider value={{ isPlaying, isLoading, playAudio, stopAudio }}>
+        <TTSContext.Provider value={{
+            isPlaying,
+            isLoading,
+            playAudio,
+            stopAudio,
+            processStreamingText
+        }}>
             {children}
         </TTSContext.Provider>
     );

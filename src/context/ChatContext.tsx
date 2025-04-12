@@ -4,6 +4,7 @@ import { createContext, useState, useContext, useMemo, useEffect, useRef } from 
 import { API_BASE_URL } from '@/utils/config'
 import { fetchEventSource } from '@microsoft/fetch-event-source'
 import { handleAuthError, handleApiError } from '@/utils/handleApiError'
+import { useTTS } from './TTSContext'
 
 // 基础消息类型
 export interface Message {
@@ -124,6 +125,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
     // 使用Map跟踪正在处理的消息，而不是Set
     const activeMessagesRef = useRef(new Map<string, Message>())
+
+    const { processStreamingText } = useTTS()
 
     // 监听当前线程ID变化
     useEffect(() => {
@@ -746,12 +749,15 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
                         // 处理AI增量消息块
                         if (data.chunk_type === 'ai_delta') {
-                            // 确保content不为空
+                            // 获取内容
                             const contentText = data.output_text || data.content || '';
                             if (!contentText.trim()) {
                                 console.log('跳过空内容的ai_delta消息');
                                 return;
                             }
+
+                            // 发送到TTS进行实时处理
+                            processStreamingText(contentText);
 
                             // 转换为统一的Message格式
                             const message: Message = {

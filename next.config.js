@@ -45,6 +45,13 @@ const nextConfig = {
                 },
             };
         }
+
+        // 只在客户端配置
+        if (!isServer) {
+            config.output.webassemblyModuleFilename = 'static/wasm/[modulehash].wasm'
+            config.experiments = { asyncWebAssembly: true, layers: true }
+        }
+
         return config;
     },
 }

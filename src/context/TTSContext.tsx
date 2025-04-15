@@ -35,6 +35,52 @@ export const TTSContext = createContext<TTSContextType>({
     },
 });
 
+// Worker 相关代码
+let ttsWorker: Worker | null = null;
+let workerCallbacks: Map<string, (data: any) => void> = new Map();
+
+// 确保只在客户端创建Worker
+const initWorker = () => {
+    if (typeof window === 'undefined') return;
+
+    if (!ttsWorker) {
+        // 动态导入Worker
+        ttsWorker = new Worker(new URL('../workers/tts-worker.ts', import.meta.url));
+
+        ttsWorker.onmessage = (event) => {
+            const { id, success, audioData, error, index } = event.data;
+            const callback = workerCallbacks.get(id);
+
+            if (callback) {
+                callback({ success, audioData, error, index });
+                workerCallbacks.delete(id);
+            }
+        };
+    }
+
+    return ttsWorker;
+};
+
+// 发送消息到Worker并返回Promise
+const sendToWorker = (action: string, payload: any): Promise<any> => {
+    const worker = initWorker();
+    if (!worker) return Promise.reject('Worker未初始化');
+
+    return new Promise((resolve, reject) => {
+        const id = Date.now().toString() + Math.random().toString();
+
+        workerCallbacks.set(id, (data) => {
+            if (data.success) {
+                resolve(data);
+            } else {
+                reject(data.error);
+            }
+        });
+
+        worker.postMessage({ id, action, payload });
+    });
+};
+
 export function TTSProvider({ children }: { children: React.ReactNode }) {
     const [isPlaying, setIsPlaying] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -350,7 +396,7 @@ export function TTSProvider({ children }: { children: React.ReactNode }) {
         pendingIndices.current.add(index);
 
         try {
-            console.log(`TTS: 处理第 ${index + 1}/${totalAudioCount.current} 个句子: ${sentence.substring(0, 20)}${sentence.length > 20 ? '...' : ''}`);
+            console.log(`TTS: 处理第 ${index + 1}/${totalAudioCount.current} 个句子`);
 
             const response = await fetch(`${API_BASE_URL}/tts`, {
                 method: 'POST',
@@ -363,10 +409,8 @@ export function TTSProvider({ children }: { children: React.ReactNode }) {
             });
 
             if (!response.ok) {
-                throw new Error(`TTS API 请求失败: ${response.status} ${response.statusText}`);
+                throw new Error(`TTS API 请求失败: ${response.status}`);
             }
-
-            console.log(`TTS: 第 ${index + 1}/${totalAudioCount.current} 个句子API请求成功，正在解析响应`);
 
             // 解析响应JSON
             const data: TTSResponse = await response.json();
@@ -375,27 +419,20 @@ export function TTSProvider({ children }: { children: React.ReactNode }) {
                 throw new Error('音频数据无效');
             }
 
-            console.log(`TTS: 第 ${index + 1}/${totalAudioCount.current} 个句子收到音频数据，长度: ${data.audio_base64.length}，task_id: ${data.task_id}`);
-
-            // 解码base64音频数据
-            const binaryString = atob(data.audio_base64);
-            const audioData = new Uint8Array(binaryString.length);
-            for (let i = 0; i < binaryString.length; i++) {
-                audioData[i] = binaryString.charCodeAt(i);
-            }
-
-            console.log(`TTS: 第 ${index + 1}/${totalAudioCount.current} 个句子音频解码完成，大小: ${audioData.length} 字节`);
+            // 使用Worker解码音频数据
+            const workerResult = await sendToWorker('decodeAudio', {
+                audio_base64: data.audio_base64,
+                index: index
+            });
 
             // 创建音频对象
-            createAudioObject(audioData, index);
-
-            console.log(`TTS: 第 ${index + 1}/${totalAudioCount.current} 个句子音频处理完成`);
+            createAudioObject(workerResult.audioData, index);
 
         } catch (error) {
             console.error(`TTS: 处理第 ${index + 1}/${totalAudioCount.current} 个句子音频失败:`, error);
             // 即使失败也从待处理集合中移除
             pendingIndices.current.delete(index);
-            // 检查播放状态，可能需要开始播放其他准备好的音频
+            // 检查播放状态
             checkPlaybackStatus();
         }
     };
@@ -675,8 +712,43 @@ export function TTSProvider({ children }: { children: React.ReactNode }) {
 
     // 在组件卸载时清理资源
     useEffect(() => {
+        // 监听路由变化
+        const handleRouteChange = () => {
+            console.log('路由变化，停止TTS播放');
+            stopAudio();
+            resetState();
+        };
+
+        // 监听浏览器事件
+        window.addEventListener('beforeunload', handleRouteChange);
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                handleRouteChange();
+            }
+        });
+
+        // 尝试监听Next.js路由事件（如果可用）
+        if (typeof window !== 'undefined') {
+            // Next.js路由事件监听
+            const nextRouter = (window as any).__NEXT_DATA__?.router;
+            if (nextRouter) {
+                document.addEventListener('routeChangeStart', handleRouteChange);
+            }
+        }
+
         return () => {
-            // 清理所有音频资源
+            window.removeEventListener('beforeunload', handleRouteChange);
+            document.removeEventListener('visibilitychange', handleRouteChange);
+            document.removeEventListener('routeChangeStart', handleRouteChange);
+
+            // 清理Worker
+            if (ttsWorker) {
+                ttsWorker.terminate();
+                ttsWorker = null;
+                workerCallbacks.clear();
+            }
+
+            // 清理其他资源...
             Object.values(audioObjects.current).forEach(audio => {
                 try {
                     if (audio.src.startsWith('blob:')) {

@@ -54,6 +54,13 @@ interface StorageStatus {
     last_updated: number;
 }
 
+// 添加文档转换接口
+interface DocumentConvertResponse {
+    id: string;
+    success: boolean;
+    message: string;
+}
+
 // 更新的上下文类型
 interface DocumentContextType {
     documents: Document[];
@@ -79,6 +86,8 @@ interface DocumentContextType {
     searchChunks: (docId: string, query: string) => Promise<void>;
     setCurrentChunkIndex: (index: number) => void;
     setUploadProgress: (progress: number) => void;
+    convertDocument: (id: string) => Promise<DocumentConvertResponse>;  // 添加文档转换功能
+    getMarkdownContent: (id: string) => Promise<string>; // 获取Markdown内容
 }
 
 const DocumentContext = createContext<DocumentContextType | undefined>(undefined);
@@ -96,10 +105,10 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
     const [storageStatus, setStorageStatus] = useState<StorageStatus | null>(null);  // 添加存储状态
 
     // 加载文档列表
-    const loadDocuments = async (includeDeleted: boolean = false) => {
+    const loadDocuments = async () => {
         setIsLoading(true);
         try {
-            const api_url = `${API_BASE_URL}/files?include_deleted=${includeDeleted}`;
+            const api_url = `${API_BASE_URL}/oculith/files`;
             const res = await fetch(api_url, {
                 credentials: 'include'
             });
@@ -117,7 +126,7 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
     const loadDocument = async (id: string) => {
         setIsLoading(true);
         try {
-            const api_url = `${API_BASE_URL}/files/${id}`;
+            const api_url = `${API_BASE_URL}/oculith/files/${id}`;
             const res = await fetch(api_url, {
                 credentials: 'include'
             });
@@ -135,7 +144,7 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
     const loadChunks = async (id: string) => {
         setIsLoading(true);
         try {
-            const api_url = `${API_BASE_URL}/files/${id}/chunks`;
+            const api_url = `${API_BASE_URL}/oculith/files/${id}/chunks`;
             const res = await fetch(api_url, {
                 credentials: 'include'
             });
@@ -171,7 +180,7 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
                 formData.append('tags', JSON.stringify(metadata.tags));
             }
 
-            const api_url = `${API_BASE_URL}/files/upload`;
+            const api_url = `${API_BASE_URL}/oculith/local/upload`;
             const res = await fetch(api_url, {
                 method: 'POST',
                 body: formData,
@@ -193,7 +202,7 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
     // 删除文档
     const deleteDocument = async (id: string) => {
         try {
-            const api_url = `${API_BASE_URL}/files/${id}`;
+            const api_url = `${API_BASE_URL}/oculith/files/${id}`;
             const res = await fetch(api_url, {
                 method: 'DELETE',
                 credentials: 'include'
@@ -211,7 +220,7 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
     // 更新文档元数据
     const updateDocumentMetadata = async (id: string, metadata: DocumentMetadataUpdate) => {
         try {
-            const api_url = `${API_BASE_URL}/files/${id}`;
+            const api_url = `${API_BASE_URL}/oculith/files/${id}`;
             const res = await fetch(api_url, {
                 method: 'PATCH',
                 headers: {
@@ -243,7 +252,7 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
         try {
             // 创建一个隐藏的a标签进行下载
             const link = document.createElement('a');
-            link.href = `${API_BASE_URL}/files/${id}/download`;
+            link.href = `${API_BASE_URL}/oculith/files/${id}/download`;
             link.target = '_blank';
             document.body.appendChild(link);
             link.click();
@@ -259,7 +268,7 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
         try {
             // 创建一个隐藏的a标签进行下载
             const link = document.createElement('a');
-            link.href = `${API_BASE_URL}/files/${id}/stream`;
+            link.href = `${API_BASE_URL}/oculith/files/${id}/stream`;
             link.target = '_blank';
             document.body.appendChild(link);
             link.click();
@@ -273,7 +282,7 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
     // 处理文档
     const processDocument = async (id: string, request: DocumentProcessRequest) => {
         try {
-            const api_url = `${API_BASE_URL}/files/${id}/process`;
+            const api_url = `${API_BASE_URL}/oculith/files/${id}/process`;
             const res = await fetch(api_url, {
                 method: 'POST',
                 headers: {
@@ -295,7 +304,7 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
     // 获取存储状态
     const getStorageStatus = async () => {
         try {
-            const api_url = `${API_BASE_URL}/files/storage/status`;
+            const api_url = `${API_BASE_URL}/oculith/files/storage/status`;
             const res = await fetch(api_url, {
                 credentials: 'include'
             });
@@ -330,10 +339,20 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
 
         setIsLoading(true);
         try {
-            const api_url = `${API_BASE_URL}/files/search?q=${encodeURIComponent(query)}`;
+            const formData = new URLSearchParams();
+            formData.append('query', query);
+            formData.append('limit', '20');
+
+            const api_url = `${API_BASE_URL}/oculith/search/documents`;
             const res = await fetch(api_url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: formData,
                 credentials: 'include'
             });
+
             if (!res.ok) throw new Error('搜索失败');
             const data = await res.json();
             setDocuments(data);
@@ -354,10 +373,23 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
 
         setIsSearching(true);
         try {
-            const api_url = `${API_BASE_URL}/files/${docId}/search?q=${encodeURIComponent(query)}`;
+            const formData = new URLSearchParams();
+            formData.append('query', query);
+            if (docId) {
+                formData.append('file_id', docId);
+            }
+            formData.append('limit', '10');
+
+            const api_url = `${API_BASE_URL}/oculith/search/chunks`;
             const res = await fetch(api_url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: formData,
                 credentials: 'include'
             });
+
             if (!res.ok) throw new Error('搜索失败');
             const data = await res.json();
             setSearchResults(data);
@@ -365,6 +397,39 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
             console.error('搜索失败:', error);
         } finally {
             setIsSearching(false);
+        }
+    };
+
+    // 添加新功能：文档转换
+    const convertDocument = async (id: string): Promise<DocumentConvertResponse> => {
+        try {
+            const api_url = `${API_BASE_URL}/oculith/files/${id}/convert`;
+            const res = await fetch(api_url, {
+                method: 'POST',
+                credentials: 'include'
+            });
+
+            if (!res.ok) throw new Error('文档转换失败');
+            return await res.json();
+        } catch (error) {
+            console.error('文档转换失败:', error);
+            throw error;
+        }
+    };
+
+    // 添加新功能：获取Markdown内容
+    const getMarkdownContent = async (id: string): Promise<string> => {
+        try {
+            const api_url = `${API_BASE_URL}/oculith/files/${id}/markdown`;
+            const res = await fetch(api_url, {
+                credentials: 'include'
+            });
+
+            if (!res.ok) throw new Error('获取Markdown内容失败');
+            return await res.json();
+        } catch (error) {
+            console.error('获取Markdown内容失败:', error);
+            throw error;
         }
     };
 
@@ -393,7 +458,9 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
                 searchDocuments,
                 searchChunks,
                 setCurrentChunkIndex,
-                setUploadProgress
+                setUploadProgress,
+                convertDocument,
+                getMarkdownContent
             }}
         >
             {children}

@@ -693,7 +693,6 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    model: 'gpt-4o-mini',
                     thread_id: currentThreadId,
                     messages: [{ role: 'user', content }]
                 }),

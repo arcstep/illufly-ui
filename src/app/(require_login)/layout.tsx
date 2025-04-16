@@ -16,7 +16,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
                 username={username ?? undefined}
                 onLogout={logout}
             />
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 overflow-auto">
                 {children}
             </div>
         </div>

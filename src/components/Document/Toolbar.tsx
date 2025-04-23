@@ -1,4 +1,4 @@
-import { faUpload, faSearch, faSort } from '@fortawesome/free-solid-svg-icons';
+import { faUpload, faSearch, faSort, faLink, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { StorageStatus } from '@/context/DocumentContext';
 import StorageStatusComponent from './StorageStatus';
@@ -9,7 +9,8 @@ export default function DocumentToolbar({
     setTitleFilter,
     sortOption,
     setSortOption,
-    onFileSelect
+    onFileSelect,
+    onRemoteResourceClick
 }: {
     storageStatus?: StorageStatus | null;
     titleFilter: string;
@@ -17,6 +18,7 @@ export default function DocumentToolbar({
     sortOption: string;
     setSortOption: (value: string) => void;
     onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onRemoteResourceClick: () => void;
 }) {
     return (
         <div className="flex flex-col gap-4 mb-6">
@@ -58,12 +60,24 @@ export default function DocumentToolbar({
                     </div>
                 </div>
 
-                {/* 上传按钮 */}
-                <label className="cursor-pointer bg-blue-500 text-white px-3 py-1.5 rounded-lg hover:bg-blue-600 transition-colors text-sm ml-auto">
-                    <FontAwesomeIcon icon={faUpload} className="mr-1.5" />
-                    上传文档
-                    <input type="file" className="hidden" onChange={onFileSelect} />
-                </label>
+                {/* 上传操作按钮组 */}
+                <div className="flex items-center gap-2 ml-auto">
+                    {/* 登记远程资源按钮 */}
+                    <button
+                        onClick={onRemoteResourceClick}
+                        className="bg-indigo-500 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-600 transition-colors text-sm flex items-center"
+                    >
+                        <FontAwesomeIcon icon={faLink} className="mr-1.5" />
+                        登记远程资源
+                    </button>
+
+                    {/* 上传文件按钮 */}
+                    <label className="cursor-pointer bg-blue-500 text-white px-3 py-1.5 rounded-lg hover:bg-blue-600 transition-colors text-sm flex items-center">
+                        <FontAwesomeIcon icon={faUpload} className="mr-1.5" />
+                        上传文档
+                        <input type="file" className="hidden" onChange={onFileSelect} />
+                    </label>
+                </div>
             </div>
         </div>
     );

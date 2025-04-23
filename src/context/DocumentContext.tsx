@@ -4,35 +4,6 @@ import { createContext, useContext, useState, ReactNode } from 'react';
 import { useApiBase } from '@/hooks/useApiBase';
 import { useMessage } from '@/hooks/useMessage';
 
-// 导出工具函数
-export function adaptTimestamp(timestamp: string | number | Date): Date {
-    if (!timestamp) return new Date(0);
-
-    // 直接返回Date对象
-    if (typeof timestamp === 'object' && timestamp instanceof Date) {
-        return timestamp;
-    }
-
-    // 转换为字符串并移除小数点及小数部分
-    const timeStr = String(timestamp).split('.')[0];
-
-    // 处理ISO日期字符串
-    if (typeof timestamp === 'string' && isNaN(Number(timestamp)) && timestamp.includes('-')) {
-        return new Date(timestamp);
-    }
-
-    // 根据位数处理时间戳
-    const digits = timeStr.length;
-
-    if (digits <= 10) { // 秒级时间戳
-        return new Date(parseInt(timeStr) * 1000);
-    } else if (digits <= 13) { // 毫秒级时间戳
-        return new Date(parseInt(timeStr));
-    } else { // 微秒/纳秒级时间戳
-        return new Date(parseInt(timeStr.substring(0, 13)));
-    }
-}
-
 // 文档接口
 export interface Document {
     document_id: string;
@@ -90,15 +61,15 @@ export interface DocumentChunk {
 
 // 简化的上下文类型
 interface DocumentContextType {
+    // 全局状态
     documents: Document[];
     currentDocument: Document | null;
-    chunks: DocumentChunk[];
-    currentChunkIndex: number;
     isLoading: boolean;
     isUploading: boolean;
-    searchResults: DocumentChunk[];
     isSearching: boolean;
     storageStatus: StorageStatus | null;
+
+    // 核心操作
     loadDocuments: () => Promise<Document[]>;
     loadDocument: (id: string) => Promise<Document | null>;
     loadChunks: (id: string) => Promise<DocumentChunk[]>;
@@ -109,12 +80,6 @@ interface DocumentContextType {
     downloadDocument: (fileId: string) => Promise<boolean>;
     getStorageStatus: () => Promise<StorageStatus>;
     searchChunks: (docId: string, query: string) => Promise<DocumentChunk[]>;
-    setCurrentChunkIndex: (index: number) => void;
-    // 以下为兼容现有使用而保留的空方法
-    uploadQueue: any[];
-    addToUploadQueue: (file: File, metadata?: FileMetadata) => string;
-    removeFromUploadQueue: (id: string) => void;
-    setUploadProgress: (progress: number) => void;
     retryDocumentProcessing: (document_id: string) => Promise<boolean>;
     checkDocumentStatus: (document_id: string) => Promise<Document>;
 }
@@ -128,11 +93,8 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
     // 状态
     const [documents, setDocuments] = useState<Document[]>([]);
     const [currentDocument, setCurrentDocument] = useState<Document | null>(null);
-    const [chunks, setChunks] = useState<DocumentChunk[]>([]);
-    const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
-    const [searchResults, setSearchResults] = useState<DocumentChunk[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [storageStatus, setStorageStatus] = useState<StorageStatus | null>(null);
 
@@ -182,11 +144,9 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
             });
             if (!response.ok) throw new Error('加载文档切片失败');
             const data = await response.json();
-            setChunks(data);
             return data;
         } catch (error) {
             console.error('加载文档切片失败:', error);
-            setChunks([]);
             return [];
         }
     };
@@ -395,7 +355,6 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
     // 搜索文档切片
     const searchChunks = async (docId: string, query: string): Promise<DocumentChunk[]> => {
         if (!query.trim()) {
-            setSearchResults([]);
             setIsSearching(false);
             return [];
         }
@@ -414,29 +373,13 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
             if (!response.ok) throw new Error('搜索失败');
 
             const data = await response.json();
-            setSearchResults(data);
             return data;
         } catch (error) {
             console.error('搜索失败:', error);
-            setSearchResults([]);
             return [];
         } finally {
             setIsSearching(false);
         }
-    };
-
-    // 以下为兼容现有使用而保留的空方法
-    const addToUploadQueue = (file: File, metadata?: FileMetadata): string => {
-        console.warn('addToUploadQueue已弃用，请直接使用uploadDocument');
-        return '';
-    };
-
-    const removeFromUploadQueue = (id: string): void => {
-        console.warn('removeFromUploadQueue已弃用');
-    };
-
-    const setUploadProgress = (progress: number): void => {
-        console.warn('setUploadProgress已弃用');
     };
 
     // 新增文档重试方法
@@ -484,11 +427,8 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
             value={{
                 documents,
                 currentDocument,
-                chunks,
-                currentChunkIndex,
                 isLoading,
                 isUploading,
-                searchResults,
                 isSearching,
                 storageStatus,
                 loadDocuments,
@@ -501,14 +441,8 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
                 downloadDocument,
                 getStorageStatus,
                 searchChunks,
-                setCurrentChunkIndex,
-                // 兼容现有使用的空方法
-                uploadQueue: [],
-                addToUploadQueue,
-                removeFromUploadQueue,
-                setUploadProgress,
                 retryDocumentProcessing,
-                checkDocumentStatus
+                checkDocumentStatus,
             }}
         >
             {children}

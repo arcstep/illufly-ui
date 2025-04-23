@@ -11,6 +11,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { faMarkdown } from '@fortawesome/free-brands-svg-icons';
 import { Document } from '@/context/DocumentContext';
+import { useDateTime } from '@/hooks/useDateTime';
 
 export default function DocumentCard({
     doc,
@@ -25,20 +26,19 @@ export default function DocumentCard({
     onDownload: (document_id: string) => Promise<boolean>;
     onRetry: (document_id: string) => Promise<boolean>;
 }) {
-    const formatDateDisplay = (timestamp: string | number) => {
-        const date = new Date(timestamp);
-        return date.toLocaleDateString('zh-CN', {
-            year: 'numeric',
-            month: 'numeric',
-            day: 'numeric'
-        });
-    };
+    const { parseTimestamp, formatDate } = useDateTime();
 
     const formatFileSize = (size: number) => {
         if (size < 1024) return `${size} B`;
         if (size < 1024 * 1024) return `${(size / 1024).toFixed(2)} KB`;
         return `${(size / (1024 * 1024)).toFixed(2)} MB`;
     };
+
+    const createdAt = formatDate(parseTimestamp(doc.created_at));
+    const updatedAt = formatDate(parseTimestamp(doc.updated_at), {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow">
@@ -135,7 +135,7 @@ export default function DocumentCard({
 
             <div className="mt-3 text-xs text-gray-500 space-y-1">
                 <div className="flex justify-between">
-                    <span>创建时间: {formatDateDisplay(doc.created_at)}</span>
+                    <span>创建时间: {createdAt}</span>
                 </div>
                 {doc.status === 'processing' && (
                     <div className="flex items-center text-yellow-600 dark:text-yellow-400">

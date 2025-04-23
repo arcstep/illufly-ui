@@ -4,16 +4,21 @@ import { useState, useEffect, Suspense } from 'react';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import { faBook, faFileAlt } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '@/context/AuthContext';
-import { useDocument, adaptTimestamp } from '@/context/DocumentContext';
+import { useDocument } from '@/context/DocumentContext';
 import { DocumentProvider, Document } from '@/context/DocumentContext';
+import { useDateTime } from '@/hooks/useDateTime';
 import {
     DocumentToolbar,
     DocumentMetadataForm,
-    DocumentCard
+    DocumentCard,
+    RemoteResourceForm
 } from '@/components/Document';
 
 function DocsPageContent() {
     const { changeCurrentPath } = useAuth();
+    const {
+        parseTimestamp,
+    } = useDateTime();
     const {
         documents,
         storageStatus,
@@ -24,7 +29,8 @@ function DocsPageContent() {
         getStorageStatus,
         checkDocumentStatus,
         retryDocumentProcessing,
-        updateDocumentMetadata
+        updateDocumentMetadata,
+        bookmarkRemoteFile
     } = useDocument();
     const [uploadMetadata, setUploadMetadata] = useState({
         title: '',
@@ -34,6 +40,18 @@ function DocsPageContent() {
     const [showMetadataForm, setShowMetadataForm] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [editingDoc, setEditingDoc] = useState<Document | null>(null);
+    const [showRemoteForm, setShowRemoteForm] = useState(false);
+    const [remoteMetadata, setRemoteMetadata] = useState<{
+        url?: string;
+        title?: string;
+        description?: string;
+        tags?: string[];
+    }>({
+        url: '',
+        title: '',
+        description: '',
+        tags: []
+    });
 
     // 简化的过滤与排序状态
     const [titleFilter, setTitleFilter] = useState('');
@@ -101,50 +119,27 @@ function DocsPageContent() {
         getStorageStatus(); // 刷新存储状态
     };
 
-    // 处理标签输入
-    const handleTagInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter' && (e.target as HTMLInputElement).value.trim()) {
-            const newTag = (e.target as HTMLInputElement).value.trim();
-            if (!uploadMetadata.tags.includes(newTag)) {
-                setUploadMetadata({
-                    ...uploadMetadata,
-                    tags: [...uploadMetadata.tags, newTag]
-                });
-            }
-            (e.target as HTMLInputElement).value = '';
-        }
-    };
+    // 处理远程资源登记
+    const handleRemoteResourceSubmit = async () => {
+        if (!remoteMetadata.url) return;
 
-    // 删除标签
-    const removeTag = (tag: string) => {
-        setUploadMetadata({
-            ...uploadMetadata,
-            tags: uploadMetadata.tags.filter(t => t !== tag)
+        await bookmarkRemoteFile(remoteMetadata.url, {
+            title: remoteMetadata.title,
+            description: remoteMetadata.description,
+            tags: remoteMetadata.tags
         });
-    };
 
-    // 获取文件类型图标
-    const getFileIcon = (fileType: string) => {
-        const type = fileType.toLowerCase();
-        if (type === 'pdf') return faFileAlt as IconProp;
-        return faBook as IconProp;
-    };
-
-    // 格式化文件大小
-    const formatFileSize = (size: number) => {
-        if (size < 1024) return `${size} B`;
-        if (size < 1024 * 1024) return `${(size / 1024).toFixed(2)} KB`;
-        return `${(size / (1024 * 1024)).toFixed(2)} MB`;
-    };
-
-    // 实用函数 - 格式化日期显示
-    const formatDateDisplay = (timestamp: string | number): string => {
-        const date = adaptTimestamp(timestamp);
-        return date.toLocaleDateString('zh-CN', {
-            year: 'numeric',
-            month: 'numeric',
-            day: 'numeric'
+        // 重置状态
+        setShowRemoteForm(false);
+        setRemoteMetadata({
+            url: '',
+            title: '',
+            description: '',
+            tags: []
         });
+
+        // 刷新存储状态
+        getStorageStatus();
     };
 
     // 修改过滤和排序后的文档列表
@@ -161,8 +156,8 @@ function DocsPageContent() {
 
         if (field === 'date') {
             // 使用adaptTimestamp确保正确排序
-            const dateA = adaptTimestamp(a.created_at).getTime();
-            const dateB = adaptTimestamp(b.created_at).getTime();
+            const dateA = parseTimestamp(a.created_at).getTime();
+            const dateB = parseTimestamp(b.created_at).getTime();
             return isAsc ? dateA - dateB : dateB - dateA;
         }
         else if (field === 'size') {
@@ -210,6 +205,7 @@ function DocsPageContent() {
                 sortOption={sortOption}
                 setSortOption={setSortOption}
                 onFileSelect={handleFileSelect}
+                onRemoteResourceClick={() => setShowRemoteForm(true)}
             />
 
             {showMetadataForm && (
@@ -224,6 +220,15 @@ function DocsPageContent() {
                     }}
                     onSubmit={editingDoc ? handleUpdateMetadata : handleFileUpload}
                     isEditing={!!editingDoc}
+                />
+            )}
+
+            {showRemoteForm && (
+                <RemoteResourceForm
+                    metadata={remoteMetadata}
+                    onMetadataChange={setRemoteMetadata}
+                    onCancel={() => setShowRemoteForm(false)}
+                    onSubmit={handleRemoteResourceSubmit}
                 />
             )}
 

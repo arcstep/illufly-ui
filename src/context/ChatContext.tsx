@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useState, useContext, useMemo, useEffect, useRef } from 'react'
-import { API_BASE_URL } from '@/utils/config'
+import { useApiBase } from '@/hooks/useApiBase'
 import { fetchEventSource } from '@microsoft/fetch-event-source'
 import { handleAuthError, handleApiError } from '@/utils/handleApiError'
 import { useTTS } from './TTSContext'
@@ -119,6 +119,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     const [archivedMessages, setArchivedMessages] = useState<Message[]>([])
     const [pendingMessages, setPendingMessages] = useState<Message[]>([])
     const [isProcessing, setIsProcessing] = useState<boolean>(false)
+    const { API_BASE_URL } = useApiBase();
 
     // 使用ref保存正在处理的线程ID，用于检测是否有并发切换操作
     const processingThreadRef = useRef<string | null>(null)

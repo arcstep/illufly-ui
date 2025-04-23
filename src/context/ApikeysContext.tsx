@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useState, useContext, useEffect } from 'react'
-import { API_BASE_URL } from '@/utils/config'
+import { useApiBase } from '@/hooks/useApiBase'
 
 interface Apikey {
     api_key: string
@@ -39,6 +39,7 @@ export function ApikeysProvider({ children }: { children: React.ReactNode }) {
     const [isLoading, setIsLoading] = useState(true)
     const [apikeys, setApikeys] = useState<Apikey[]>([])
     const [imitators, setImitators] = useState<string[]>([])
+    const { API_BASE_URL } = useApiBase();
 
     useEffect(() => {
         // 只在客户端执行

@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useState, useContext, useEffect } from 'react'
-import { API_BASE_URL } from '@/utils/config'
+import { useApiBase } from '@/hooks/useApiBase'
 
 interface MemoryItem {
     user_id: string
@@ -52,6 +52,7 @@ export function MemoryProvider({ children }: { children: React.ReactNode }) {
     const [isSearching, setIsSearching] = useState<boolean>(false)
     const [memories, setMemories] = useState<MemoryItem[]>([])
     const [topicGroups, setTopicGroups] = useState<Map<string, MemoryItem[]>>(new Map())
+    const { API_BASE_URL } = useApiBase();
 
     useEffect(() => {
         if (typeof window === 'undefined') return;

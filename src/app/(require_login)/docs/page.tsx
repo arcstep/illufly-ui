@@ -3,7 +3,8 @@
 import { useState, useEffect, Suspense } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
-import { faUpload, faSearch, faTrash, faBook, faFileAlt, faDownload, faSort } from '@fortawesome/free-solid-svg-icons';
+import { faUpload, faSearch, faTrash, faBook, faFileAlt, faDownload, faSort, faCheckCircle, faCube, faLink, faRedo, faExternalLinkAlt, faSyncAlt } from '@fortawesome/free-solid-svg-icons';
+import { faMarkdown } from '@fortawesome/free-brands-svg-icons';
 import { useAuth } from '@/context/AuthContext';
 import { useDocument, adaptTimestamp } from '@/context/DocumentContext';
 import { DocumentProvider } from '@/context/DocumentContext';
@@ -14,18 +15,15 @@ function DocsPageContent() {
         documents,
         isLoading,
         isUploading,
-        uploadProgress,
         storageStatus,
-        uploadQueue,
         loadDocuments,
         uploadDocument,
         deleteDocument,
         downloadDocument,
-        searchDocuments,
         getStorageStatus,
-        removeFromUploadQueue
+        checkDocumentStatus,
+        retryDocumentProcessing
     } = useDocument();
-    const [searchQuery, setSearchQuery] = useState('');
     const [uploadMetadata, setUploadMetadata] = useState({
         title: '',
         description: '',
@@ -43,6 +41,18 @@ function DocsPageContent() {
         loadDocuments();
         getStorageStatus();
     }, []);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            documents.forEach(doc => {
+                if (doc.status === 'processing') {
+                    checkDocumentStatus(doc.document_id);
+                }
+            });
+        }, 30000);
+
+        return () => clearInterval(interval);
+    }, [documents]);
 
     // 处理文件选择
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -82,15 +92,10 @@ function DocsPageContent() {
     };
 
     // 处理文档删除
-    const handleDelete = async (docId: string) => {
+    const handleDelete = async (document_id: string) => {
         if (!confirm('确定要删除这个文档吗？')) return;
-        await deleteDocument(docId);
+        await deleteDocument(document_id);
         getStorageStatus(); // 刷新存储状态
-    };
-
-    // 处理文档搜索
-    const handleSearch = async () => {
-        await searchDocuments(searchQuery);
     };
 
     // 处理标签输入
@@ -139,38 +144,10 @@ function DocsPageContent() {
         });
     };
 
-    // 合并上传队列和文档列表，并去重
-    const getMergedDocuments = () => {
-        // 创建一个已有文档的映射，用于检查重复
-        const existingDocMap = new Map();
-        documents.forEach(doc => {
-            existingDocMap.set(doc.id, doc);
-            // 也用文件名+大小作为备用键，处理没有ID的情况
-            existingDocMap.set(`${doc.original_name}_${doc.size}`, doc);
-        });
-
-        // 过滤上传队列，移除已在文档列表中的项
-        const uniqueQueueItems = uploadQueue.filter(item => {
-            // 如果队列项有fileId，检查是否已在文档列表中
-            if (item.fileId && existingDocMap.has(item.fileId)) {
-                return false; // 在文档列表中已存在，过滤掉
-            }
-
-            // 如果没有fileId，通过文件名+大小判断是否重复
-            const queueKey = `${item.file.name}_${item.file.size}`;
-            return !existingDocMap.has(queueKey);
-        });
-
-        return { uniqueQueueItems };
-    };
-
-    // 获取过滤后的队列项和文档
-    const { uniqueQueueItems } = getMergedDocuments();
-
-    // 应用过滤和排序 - 简化版
+    // 修改过滤和排序后的文档列表
     const filteredDocuments = documents.filter(doc => {
         // 只保留标题关键字过滤
-        if (titleFilter && !(doc.title || doc.original_name).toLowerCase().includes(titleFilter.toLowerCase())) {
+        if (titleFilter && !(doc.title || doc.original_name || '未命名文档').toLowerCase().includes(titleFilter.toLowerCase())) {
             return false;
         }
         return true;
@@ -189,44 +166,13 @@ function DocsPageContent() {
             return isAsc ? a.size - b.size : b.size - a.size;
         }
         else { // title
-            const aTitle = a.title || a.original_name;
-            const bTitle = b.title || b.original_name;
+            const aTitle = a.title || a.original_name || '未命名文档';
+            const bTitle = b.title || b.original_name || '未命名文档';
             return isAsc
                 ? aTitle.localeCompare(bTitle)
                 : bTitle.localeCompare(aTitle);
         }
     });
-
-    // 获取上传队列项的状态文本
-    const getQueueItemStatusText = (status: string, progress: number) => {
-        switch (status) {
-            case 'pending': return '等待上传...';
-            case 'uploading': return `上传中 ${progress}%`;
-            case 'processing': return `处理中 ${progress}%`;
-            case 'completed': return '上传完成';
-            case 'error': return '上传失败';
-            default: return '未知状态';
-        }
-    };
-
-    // 获取队列项状态的颜色类名
-    const getQueueItemStatusColor = (status: string) => {
-        switch (status) {
-            case 'pending': return 'text-gray-500 dark:text-gray-400';
-            case 'uploading': return 'text-blue-500 dark:text-blue-400';
-            case 'processing': return 'text-blue-500 dark:text-blue-400';
-            case 'completed': return 'text-green-500 dark:text-green-400';
-            case 'error': return 'text-red-500 dark:text-red-400';
-            default: return 'text-gray-500 dark:text-gray-400';
-        }
-    };
-
-    // 取消上传队列中的文件
-    const handleCancelUpload = (queueId: string) => {
-        if (confirm('确定要取消这个上传任务吗？')) {
-            removeFromUploadQueue(queueId);
-        }
-    };
 
     return (
         <div className="container mx-auto px-4 py-8 bg-white dark:bg-gray-900 min-h-screen">
@@ -298,27 +244,6 @@ function DocsPageContent() {
                     </div>
                 </div>
             </div>
-
-            {/* 上传进度条 */}
-            {isUploading && (
-                <div className="mb-4">
-                    <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                            {uploadProgress < 5 ? "准备上传..." :
-                                uploadProgress < 75 ? "处理文档..." :
-                                    uploadProgress < 95 ? "创建索引..." :
-                                        "完成"}
-                        </span>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">{uploadProgress}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                        <div
-                            className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
-                            style={{ width: `${uploadProgress}%` }}
-                        ></div>
-                    </div>
-                </div>
-            )}
 
             {/* 元数据表单 */}
             {showMetadataForm && selectedFile && (
@@ -402,166 +327,155 @@ function DocsPageContent() {
                 </div>
             ) : (
                 <>
-                    {/* 文档列表 - 包含上传队列 */}
+                    {/* 文档列表 - 仅显示已上传文档 */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {/* 上传队列项 - 只显示不在文档列表中的队列项 */}
-                        {uniqueQueueItems.map((queueItem) => (
-                            <div
-                                key={queueItem.id}
-                                className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow border-l-4 border-blue-500"
-                            >
-                                <div className="flex items-start justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <FontAwesomeIcon
-                                            icon={faFileAlt as IconProp}
-                                            className="text-2xl text-blue-500"
-                                        />
-                                        <div>
-                                            <h3 className="font-medium text-gray-800 dark:text-white">
-                                                {queueItem.metadata?.title || queueItem.file.name}
-                                            </h3>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                                {formatFileSize(queueItem.file.size)}
-                                            </p>
+                        {filteredDocuments.map((doc, index) => {
+                            // 双重校验
+                            if (documents.slice(0, index).some(d => d.document_id === doc.document_id)) {
+                                console.error(`发现重复文档ID: ${doc.document_id}，标题：${doc.title}`);
+                                return null; // 暂时隐藏重复项
+                            }
+
+                            return (
+                                <div key={doc.document_id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow">
+                                    {/* 顶部元数据栏 */}
+                                    <div className="flex justify-between items-start mb-2">
+                                        {/* 文档类型标识 */}
+                                        <span
+                                            title={`文件类型: ${doc.type.toUpperCase()}\n原始文件名: ${doc.original_name}`}
+                                            className="text-xs px-2 py-1 rounded-md bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300"
+                                        >
+                                            {doc.type.toUpperCase() || '文件'} · {formatFileSize(doc.size)}
+                                        </span>
+
+                                        {/* 处理状态指示器 */}
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-xs px-2 py-1 rounded-full ${doc.status === 'processing' ? 'bg-yellow-100 dark:bg-yellow-900/30 animate-pulse' :
+                                                doc.status === 'error' ? 'bg-red-100 dark:bg-red-900/30' :
+                                                    'bg-green-100 dark:bg-green-900/30'
+                                                }`}>
+                                                {doc.status === 'processing' ? '处理中' : doc.status === 'error' ? '处理失败' : '可用'}
+                                            </span>
                                         </div>
                                     </div>
-                                    {queueItem.status !== 'completed' && (
-                                        <button
-                                            onClick={() => handleCancelUpload(queueItem.id)}
-                                            className="text-red-500 hover:text-red-600"
-                                        >
-                                            <FontAwesomeIcon icon={faTrash as IconProp} />
-                                        </button>
+
+                                    {/* 核心信息区 */}
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="font-medium text-gray-800 dark:text-white truncate">
+                                                {doc.title || doc.original_name || '未命名文档'}
+                                                {doc.source_type === 'remote' && (
+                                                    <span className="ml-2 text-blue-500 text-sm" title="远程资源">
+                                                        <FontAwesomeIcon icon={faLink} />
+                                                    </span>
+                                                )}
+                                            </h3>
+
+                                            {/* 转换状态标签 */}
+                                            <div className="mt-1 flex flex-wrap gap-1.5">
+                                                {doc.converted && (
+                                                    <span className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs px-2 py-0.5 rounded-full flex items-center">
+                                                        <FontAwesomeIcon icon={faCheckCircle} className="mr-1 text-xs" />
+                                                        已转换
+                                                    </span>
+                                                )}
+                                                {doc.has_markdown && (
+                                                    <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs px-2 py-0.5 rounded-full flex items-center">
+                                                        <FontAwesomeIcon icon={faMarkdown} className="mr-1" />
+                                                        Markdown
+                                                    </span>
+                                                )}
+                                                {doc.has_chunks && (
+                                                    <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 text-xs px-2 py-0.5 rounded-full flex items-center">
+                                                        <FontAwesomeIcon icon={faCube} className="mr-1" />
+                                                        已分片 ({doc.chunks_count || 0})
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* 操作按钮组 */}
+                                        <div className="flex items-center gap-2 pl-2">
+                                            {doc.source_type === 'local' && doc.download_url && (
+                                                <button
+                                                    onClick={() => downloadDocument(doc.document_id)}
+                                                    className="text-gray-500 hover:text-blue-600 dark:text-gray-400"
+                                                    title="下载原始文件"
+                                                >
+                                                    <FontAwesomeIcon icon={faDownload} />
+                                                </button>
+                                            )}
+                                            {doc.source_type === 'remote' && (
+                                                <a
+                                                    href={doc.source_url}
+                                                    target="_blank"
+                                                    className="text-gray-500 hover:text-blue-600 dark:text-gray-400"
+                                                    title="查看原始链接"
+                                                >
+                                                    <FontAwesomeIcon icon={faExternalLinkAlt} />
+                                                </a>
+                                            )}
+                                            <button
+                                                onClick={() => handleDelete(doc.document_id)}
+                                                className="text-gray-500 hover:text-red-600 dark:text-gray-400"
+                                                title="删除文档"
+                                            >
+                                                <FontAwesomeIcon icon={faTrash} />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* 时间线信息 */}
+                                    <div className="mt-3 text-xs text-gray-500 space-y-1">
+                                        <div className="flex justify-between">
+                                            <span>创建时间: {formatDateDisplay(doc.created_at)}</span>
+                                            <span>更新时间: {formatDateDisplay(doc.updated_at)}</span>
+                                        </div>
+                                        {doc.status === 'processing' && (
+                                            <div className="flex items-center text-yellow-600 dark:text-yellow-400">
+                                                <FontAwesomeIcon icon={faSyncAlt} className="animate-spin mr-1" />
+                                                <span>正在处理中，剩余约 {(doc.estimated_time || 0).toFixed(0)}秒</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* 错误状态详情 */}
+                                    {doc.status === 'error' && (
+                                        <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded text-xs text-red-600 dark:text-red-300">
+                                            {doc.error_message || '文档处理失败'}
+                                            <button
+                                                onClick={() => retryDocumentProcessing(doc.document_id)}
+                                                className="ml-2 text-red-700 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
+                                            >
+                                                重试处理
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
-
-                                {/* 上传状态和进度条 */}
-                                <div className="mt-4">
-                                    <div className="flex justify-between items-center mb-1">
-                                        <span className={`text-sm ${getQueueItemStatusColor(queueItem.status)}`}>
-                                            {getQueueItemStatusText(queueItem.status, queueItem.progress)}
-                                        </span>
-                                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                                            {queueItem.progress}%
-                                        </span>
-                                    </div>
-                                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                                        <div
-                                            className={`h-2.5 rounded-full transition-all duration-300 ${queueItem.status === 'error' ? 'bg-red-500' : 'bg-blue-600'
-                                                }`}
-                                            style={{ width: `${queueItem.progress}%` }}
-                                        ></div>
-                                    </div>
-                                </div>
-
-                                {/* 错误消息 */}
-                                {queueItem.error && (
-                                    <div className="mt-2 text-sm text-red-500">
-                                        错误: {queueItem.error}
-                                    </div>
-                                )}
-
-                                {/* 当前处理状态消息 */}
-                                {queueItem.message && queueItem.status !== 'error' && (
-                                    <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                                        {queueItem.message}
-                                    </div>
-                                )}
-
-                                {/* 标签显示 */}
-                                {queueItem.metadata?.tags && queueItem.metadata.tags.length > 0 && (
-                                    <div className="mt-3 flex flex-wrap gap-1">
-                                        {queueItem.metadata.tags.map(tag => (
-                                            <span key={tag} className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 text-xs px-2 py-0.5 rounded-full">
-                                                {tag}
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-
-                        {/* 已完成的文档 */}
-                        {filteredDocuments.map((doc) => (
-                            <div
-                                key={doc.id}
-                                className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow"
-                            >
-                                <div className="flex items-start justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <FontAwesomeIcon
-                                            icon={getFileIcon(doc.type)}
-                                            className="text-2xl text-blue-500"
-                                        />
-                                        <div>
-                                            <h3 className="font-medium text-gray-800 dark:text-white">{doc.title || doc.original_name}</h3>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                                {formatDateDisplay(doc.created_at)}
-                                                {doc.size && ` · ${formatFileSize(doc.size)}`}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() => handleDelete(doc.id)}
-                                        className="text-red-500 hover:text-red-600"
-                                    >
-                                        <FontAwesomeIcon icon={faTrash as IconProp} />
-                                    </button>
-                                </div>
-
-                                {doc.description && (
-                                    <div className="mt-4">
-                                        <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">{doc.description}</p>
-                                    </div>
-                                )}
-
-                                {doc.tags && doc.tags.length > 0 && (
-                                    <div className="mt-3 flex flex-wrap gap-1">
-                                        {doc.tags.map(tag => (
-                                            <span key={tag} className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 text-xs px-2 py-0.5 rounded-full">
-                                                {tag}
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
-
-                                <div className="mt-4 flex justify-between items-center">
-                                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                                        {doc.chunks_count ? `${doc.chunks_count} 个片段` : ""}
-                                    </span>
-                                    <button
-                                        onClick={() => downloadDocument(doc.id)}
-                                        className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
-                                    >
-                                        <FontAwesomeIcon icon={faDownload as IconProp} className="mr-1" />
-                                        下载
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </>
             )}
 
-            {/* 空状态 - 如果没有文档且上传队列为空 */}
-            {!isLoading && filteredDocuments.length === 0 && uniqueQueueItems.length === 0 && (
+            {/* 空状态 - 仅检查文档列表 */}
+            {!isLoading && filteredDocuments.length === 0 && (
                 <div className="text-center py-8">
                     <FontAwesomeIcon
                         icon={faBook as IconProp}
                         className="text-3xl text-gray-400 mb-3"
                     />
-                    <p className="text-gray-500">暂无匹配的文档</p>
+                    <p className="text-gray-500">暂无文档</p>
                     <p className="text-sm text-gray-400 mt-1">
                         {titleFilter ? "尝试其他关键词" : "上传文档开始管理您的知识库"}
                     </p>
                 </div>
             )}
 
-            {/* 显示过滤后的文档数量 - 小型显示 */}
+            {/* 显示过滤后的文档数量 */}
             {filteredDocuments.length > 0 && documents.length !== filteredDocuments.length && (
                 <div className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
                     显示 {filteredDocuments.length}/{documents.length} 个文档
-                    {uniqueQueueItems.length > 0 && ` · ${uniqueQueueItems.length} 个文件正在上传`}
                 </div>
             )}
         </div>

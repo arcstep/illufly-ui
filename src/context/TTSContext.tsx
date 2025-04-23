@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
 import { createContext, useContext, useState, useRef, useEffect } from 'react';
-import { API_BASE_URL } from '@/utils/config';
+import { useApiBase } from '@/hooks/useApiBase';
 import { useSettings } from '@/context/SettingsContext';
 
 interface TTSContextType {
@@ -84,6 +84,7 @@ const sendToWorker = (action: string, payload: any): Promise<any> => {
 export function TTSProvider({ children }: { children: React.ReactNode }) {
     const [isPlaying, setIsPlaying] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const { API_BASE_URL } = useApiBase();
 
     // 新的状态管理
     const audioObjects = useRef<{ [index: number]: HTMLAudioElement }>({});

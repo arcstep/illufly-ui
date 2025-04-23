@@ -2,7 +2,7 @@
 
 import { createContext, useState, useContext, useEffect } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-import { API_BASE_URL } from '@/utils/config'
+import { useApiBase } from '@/hooks/useApiBase'
 
 interface AuthContextType {
     user_id: string | null;
@@ -56,6 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [role, setRole] = useState<string | null>(null)
     const [isAuthenticated, setIsAuthenticated] = useState(false)
     const [currentPath, setCurrentPath] = useState<string | null>(null)
+    const { API_BASE_URL } = useApiBase();
 
     useEffect(() => {
         // 只在客户端执行

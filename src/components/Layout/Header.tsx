@@ -85,7 +85,7 @@ export default function Header({ username, onLogout }: HeaderProps) {
                                 style={navLinkStyle}
                             >
                                 <FontAwesomeIcon icon={faBook as IconProp} className="mr-1.5 h-4 w-4" />
-                                阅读
+                                资料库
                             </Link>
                         </nav>
                     </div>

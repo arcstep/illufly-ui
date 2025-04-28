@@ -49,7 +49,7 @@ export default function RemoteResourceForm({
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                 <h3 className="flex items-center font-medium text-gray-800 dark:text-white mb-4">
                     <FontAwesomeIcon icon={faLink} className="mr-2 text-indigo-500" />
-                    登记远程资源
+                    Web资源
                 </h3>
 
                 <div className="space-y-4">

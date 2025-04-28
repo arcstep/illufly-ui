@@ -27,8 +27,6 @@ function DocsPageContent() {
         deleteDocument,
         downloadDocument,
         getStorageStatus,
-        checkDocumentStatus,
-        retryDocumentProcessing,
         updateDocumentMetadata,
         bookmarkRemoteFile
     } = useDocument();
@@ -62,18 +60,6 @@ function DocsPageContent() {
         loadDocuments();
         getStorageStatus();
     }, []);
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            documents.forEach(doc => {
-                if (doc.status === 'processing') {
-                    checkDocumentStatus(doc.document_id);
-                }
-            });
-        }, 30000);
-
-        return () => clearInterval(interval);
-    }, [documents]);
 
     // 处理文件选择
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -241,7 +227,6 @@ function DocsPageContent() {
                         onEdit={handleEditMetadata}
                         onDelete={handleDelete}
                         onDownload={downloadDocument}
-                        onRetry={retryDocumentProcessing}
                     />
                 ))}
             </div>

@@ -1,5 +1,15 @@
-export { default as DocumentToolbar } from './Toolbar';
-export { default as DocumentMetadataForm } from './MetadataForm';
-export { default as DocumentCard } from './DocumentCard';
-export { default as StorageStatus } from './StorageStatus';
-export { default as RemoteResourceForm } from './RemoteResourceForm';
+import DocumentCard from './DocumentCard';
+import DocumentToolbar from './Toolbar';
+import DocumentMetadataForm from './MetadataForm';
+import RemoteResourceForm from './RemoteResourceForm';
+import MarkdownViewer from './MarkdownViewer';
+import ChunksViewer from './ChunksViewer';
+
+export {
+    DocumentCard,
+    DocumentToolbar,
+    DocumentMetadataForm,
+    RemoteResourceForm,
+    MarkdownViewer,
+    ChunksViewer
+};

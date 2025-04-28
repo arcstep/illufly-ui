@@ -18,9 +18,12 @@ export interface Document {
     title: string;
     description: string;
     tags: string[];
-    converted: boolean;
+    process_stage?: string;
+    is_processing?: boolean;
     has_markdown: boolean;
     has_chunks: boolean;
+    chunks_count?: number;
+    has_embeddings?: boolean;
     source_type: 'local' | 'remote';
     source_url: string;
     [key: string]: any; // 保留扩展字段
@@ -79,9 +82,10 @@ interface DocumentContextType {
     updateDocumentMetadata: (id: string, metadata: DocumentMetadataUpdate) => Promise<Document | null>;
     downloadDocument: (fileId: string) => Promise<boolean>;
     getStorageStatus: () => Promise<StorageStatus>;
-    searchChunks: (docId: string, query: string) => Promise<DocumentChunk[]>;
-    retryDocumentProcessing: (document_id: string) => Promise<boolean>;
-    checkDocumentStatus: (document_id: string) => Promise<Document>;
+    searchChunks: (query: string, docId?: string, limit?: number) => Promise<DocumentChunk[]>;
+    convertToMarkdown: (document_id: string) => Promise<boolean>;
+    generateChunks: (document_id: string) => Promise<boolean>;
+    indexDocument: (document_id: string) => Promise<boolean>;
 }
 
 const DocumentContext = createContext<DocumentContextType | undefined>(undefined);
@@ -353,7 +357,7 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
     };
 
     // 搜索文档切片
-    const searchChunks = async (docId: string, query: string): Promise<DocumentChunk[]> => {
+    const searchChunks = async (query: string, docId?: string, limit?: number): Promise<DocumentChunk[]> => {
         if (!query.trim()) {
             setIsSearching(false);
             return [];
@@ -361,12 +365,16 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
 
         setIsSearching(true);
         try {
-            const response = await fetch(`${API_BASE_URL}/documents/${docId}/search`, {
+            let url = `${API_BASE_URL}/documents/search?query=${encodeURIComponent(query)}`;
+            if (docId) {
+                url += `&document_id=${encodeURIComponent(docId)}`;
+            }
+            if (limit) {
+                url += `&limit=${limit}`;
+            }
+
+            const response = await fetch(url, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ query }),
                 credentials: 'include'
             });
 
@@ -382,43 +390,69 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    // 新增文档重试方法
-    const retryDocumentProcessing = async (document_id: string): Promise<boolean> => {
+    // 将文档转换为Markdown
+    const convertToMarkdown = async (document_id: string): Promise<boolean> => {
         try {
-            const response = await fetch(`${API_BASE_URL}/documents/${document_id}/retry`, {
+            const response = await fetch(`${API_BASE_URL}/documents/${document_id}/convert`, {
                 method: 'POST',
                 credentials: 'include'
             });
 
-            if (!response.ok) throw new Error('重试处理失败');
+            if (!response.ok) throw new Error('转换失败');
 
-            // 刷新文档列表
-            await loadDocuments();
-            showMessage?.({ type: 'success', content: '已触发重新处理' });
+            showMessage?.({ type: 'success', content: '文档转换已启动' });
+
+            // 刷新文档
+            await loadDocument(document_id);
             return true;
         } catch (error) {
-            console.error('重试处理失败:', error);
-            showMessage?.({ type: 'error', content: '重试处理失败' });
+            console.error('转换失败:', error);
+            showMessage?.({ type: 'error', content: '文档转换失败' });
             return false;
         }
     };
 
-    // 更新文档状态检查
-    const checkDocumentStatus = async (document_id: string): Promise<Document> => {
+    // 文档切片处理
+    const generateChunks = async (document_id: string): Promise<boolean> => {
         try {
-            const response = await fetch(`${API_BASE_URL}/documents/${document_id}/status`, {
+            const response = await fetch(`${API_BASE_URL}/documents/${document_id}/chunks`, {
+                method: 'POST',
                 credentials: 'include'
             });
-            const data = await response.json();
 
-            // 更新本地状态
-            setDocuments(prev => prev.map(doc =>
-                doc.document_id === document_id ? { ...doc, ...data } : doc
-            ));
-            return data;
+            if (!response.ok) throw new Error('生成切片失败');
+
+            showMessage?.({ type: 'success', content: '文档分片已启动' });
+
+            // 刷新文档
+            await loadDocument(document_id);
+            return true;
         } catch (error) {
-            console.error('状态检查失败:', error);
-            throw error;
+            console.error('生成切片失败:', error);
+            showMessage?.({ type: 'error', content: '文档分片失败' });
+            return false;
+        }
+    };
+
+    // 添加到向量索引
+    const indexDocument = async (document_id: string): Promise<boolean> => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/documents/${document_id}/index`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+
+            if (!response.ok) throw new Error('向量索引失败');
+
+            showMessage?.({ type: 'success', content: '文档已添加到向量索引' });
+
+            // 刷新文档
+            await loadDocument(document_id);
+            return true;
+        } catch (error) {
+            console.error('向量索引失败:', error);
+            showMessage?.({ type: 'error', content: '向量索引失败' });
+            return false;
         }
     };
 
@@ -441,8 +475,9 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
                 downloadDocument,
                 getStorageStatus,
                 searchChunks,
-                retryDocumentProcessing,
-                checkDocumentStatus,
+                convertToMarkdown,
+                generateChunks,
+                indexDocument,
             }}
         >
             {children}

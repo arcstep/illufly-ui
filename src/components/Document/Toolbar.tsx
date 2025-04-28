@@ -68,13 +68,13 @@ export default function DocumentToolbar({
                         className="bg-indigo-500 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-600 transition-colors text-sm flex items-center"
                     >
                         <FontAwesomeIcon icon={faLink} className="mr-1.5" />
-                        登记远程资源
+                        Web收藏
                     </button>
 
                     {/* 上传文件按钮 */}
                     <label className="cursor-pointer bg-blue-500 text-white px-3 py-1.5 rounded-lg hover:bg-blue-600 transition-colors text-sm flex items-center">
                         <FontAwesomeIcon icon={faUpload} className="mr-1.5" />
-                        上传文档
+                        本地上传
                         <input type="file" className="hidden" onChange={onFileSelect} />
                     </label>
                 </div>

@@ -1,4 +1,4 @@
-import { faUpload, faSearch, faSort, faLink, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faUpload, faSearch, faSort, faLink } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { StorageStatus } from '@/context/DocumentContext';
 import StorageStatusComponent from './StorageStatus';

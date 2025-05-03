@@ -1,6 +1,5 @@
-import { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faLink } from '@fortawesome/free-solid-svg-icons';
+import { faLink } from '@fortawesome/free-solid-svg-icons';
 import { FileMetadata } from '@/context/DocumentContext';
 
 export default function RemoteResourceForm({

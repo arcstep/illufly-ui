@@ -1,17 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-    faCheckCircle,
     faCube,
     faDownload,
     faExternalLinkAlt,
-    faLink,
     faSyncAlt,
     faTrash,
     faEdit,
-    faFileAlt,
     faNetworkWired,
-    faDatabase,
     faEllipsisV
 } from '@fortawesome/free-solid-svg-icons';
 import { faMarkdown } from '@fortawesome/free-brands-svg-icons';
@@ -32,7 +28,7 @@ export default function DocumentCard({
     onDownload: (document_id: string) => Promise<boolean>;
 }) {
     const { parseTimestamp, formatDate } = useDateTime();
-    const { convertToMarkdown, generateChunks, indexDocument } = useDocument();
+    const { indexDocument } = useDocument();
 
     // 弹窗状态
     const [showMarkdown, setShowMarkdown] = useState(false);
@@ -60,10 +56,6 @@ export default function DocumentCard({
     };
 
     const createdAt = formatDate(parseTimestamp(doc.created_at));
-    const updatedAt = formatDate(parseTimestamp(doc.updated_at), {
-        hour: '2-digit',
-        minute: '2-digit'
-    });
 
     // 文件类型显示处理
     const getFileTypeDisplay = () => {
@@ -178,8 +170,15 @@ export default function DocumentCard({
                         </button>
                     )}
 
-                    {/* 向量索引按钮 */}
-                    {doc.has_chunks && (doc.chunks_count || 0) > 0 && !doc.has_embeddings && (
+                    {/* 向量索引按钮或标记 */}
+                    {doc.has_embeddings ? (
+                        <span
+                            className="p-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-xs flex items-center justify-center"
+                            title="已向量化"
+                        >
+                            <FontAwesomeIcon icon={faNetworkWired} />
+                        </span>
+                    ) : (doc.has_chunks && (doc.chunks_count || 0) > 0 && (
                         <button
                             onClick={handleIndexDocument}
                             className="p-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-xs"
@@ -187,7 +186,7 @@ export default function DocumentCard({
                         >
                             <FontAwesomeIcon icon={faNetworkWired} />
                         </button>
-                    )}
+                    ))}
                 </div>
 
                 {/* 右侧收纳菜单 */}

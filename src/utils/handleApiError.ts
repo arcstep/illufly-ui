@@ -9,13 +9,14 @@ export function handleAuthError(status: number, message?: string): boolean {
     if (status === 401) {
         // 获取当前URL路径
         const currentPath = window.location.pathname
-        // 重定向到登录页面，并带上当前路径作为from参数
-        window.location.href = `/login?from=${encodeURIComponent(currentPath)}`
+        // 暂时注释掉重定向逻辑
+        // window.location.href = `/login?from=${encodeURIComponent(currentPath)}`
+        console.log('暂时禁用401重定向，当前路径:', currentPath)
 
         if (message) {
             console.error(message)
         } else {
-            console.error('未登录或会话已过期，正在重定向到登录页面')
+            console.error('未登录或会话已过期，但暂时不重定向')
         }
 
         return true

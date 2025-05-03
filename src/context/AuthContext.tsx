@@ -12,10 +12,13 @@ interface AuthContextType {
     isAuthenticated: boolean;
     device_id: string | null;
     currentPath: string | null;
+    token: string | null;
     login: (username: string, password: string) => Promise<void>;
     logout: () => Promise<void>;
-    refresh_token: () => Promise<void>;
+    refresh_token: () => Promise<boolean>;
     changeCurrentPath: (path: string) => Promise<void>;
+    authFetch: (url: string, options?: RequestInit) => Promise<Response>;
+    setToken: (token: string | null) => void;
 }
 
 export const AuthContext = createContext<AuthContextType>({
@@ -26,6 +29,7 @@ export const AuthContext = createContext<AuthContextType>({
     device_id: null,
     isAuthenticated: false,
     currentPath: null,
+    token: null,
     login: async () => {
         throw new Error('AuthProvider not found')
     },
@@ -38,6 +42,12 @@ export const AuthContext = createContext<AuthContextType>({
     changeCurrentPath: async () => {
         throw new Error('AuthProvider not found')
     },
+    authFetch: async () => {
+        throw new Error('AuthProvider not found')
+    },
+    setToken: () => {
+        throw new Error('AuthProvider not found')
+    }
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -56,129 +66,278 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [role, setRole] = useState<string | null>(null)
     const [isAuthenticated, setIsAuthenticated] = useState(false)
     const [currentPath, setCurrentPath] = useState<string | null>(null)
+    const [token, setTokenState] = useState<string | null>(null)
     const { API_BASE_URL } = useApiBase();
 
-    useEffect(() => {
-        // 只在客户端执行
-        if (typeof window === 'undefined') return;
+    // 更新token并保存到本地存储
+    const setToken = (newToken: string | null) => {
+        setTokenState(newToken);
+        if (newToken) {
+            localStorage.setItem('auth_token', newToken);
+        } else {
+            localStorage.removeItem('auth_token');
+        }
+    };
 
-        // 不在登录页等页面执行
-        if (noAuthPaths.includes(pathname || '')) {
+    useEffect(() => {
+        // 页面加载时从localStorage读取token
+        const storedToken = localStorage.getItem('auth_token');
+        if (storedToken) {
+            setTokenState(storedToken);
+            // 有token时尝试获取用户信息
+            fetchUserInfo(storedToken);
+        } else if (!noAuthPaths.includes(pathname || '')) {
+            // 如果没有token且不在免认证页面，则尝试刷新token
+            refresh_token();
+        } else {
             setIsLoading(false);
-            return;
+        }
+    }, []);
+
+    // 获取用户信息
+    const fetchUserInfo = async (currentToken: string) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+                headers: {
+                    'Authorization': `Bearer ${currentToken}`
+                },
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                const userData = await response.json();
+                // 更新用户信息
+                setUserId(userData.user_id || userData.id);
+                setUsername(userData.username);
+                setEmail(userData.email);
+                setRole(userData.role);
+                setDeviceId(userData.device_id);
+                setIsAuthenticated(true);
+            } else {
+                // 如果获取用户信息失败，尝试刷新token
+                const refreshed = await refresh_token();
+                if (!refreshed) {
+                    handleUnauthorized();
+                }
+            }
+        } catch (error) {
+            console.error('获取用户信息失败:', error);
+            handleUnauthorized();
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // 辅助函数：获取带认证的请求头
+    const getAuthHeaders = () => {
+        const headers: HeadersInit = {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        };
+
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
         }
 
-        refresh_token();
-    }, [pathname])
+        return headers;
+    };
 
-    const refresh_token = async () => {
-        const api_url = `${API_BASE_URL}/auth/profile`
-        console.log('api_url >>> ', api_url)
+    // 带认证的fetch函数
+    const authFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
+        // 添加认证头
+        const headers = {
+            ...options.headers,
+            ...getAuthHeaders()
+        };
 
+        // 发送请求
+        const response = await fetch(url, {
+            ...options,
+            headers,
+            credentials: 'include'
+        });
+
+        // 处理自动令牌续订
+        const newToken = response.headers.get('Authorization');
+        if (newToken?.startsWith('Bearer ')) {
+            const extractedToken = newToken.substring(7);
+            setToken(extractedToken);
+        }
+
+        // 处理401错误（令牌过期）
+        if (response.status === 401) {
+            // 尝试刷新令牌
+            const refreshed = await refresh_token();
+            if (refreshed) {
+                // 使用新令牌重试请求
+                return authFetch(url, options);
+            } else {
+                // 刷新失败，重定向到登录页
+                handleUnauthorized();
+            }
+        }
+
+        return response;
+    };
+
+    const refresh_token = async (): Promise<boolean> => {
         try {
             console.log('开始刷新 token')
             setIsLoading(true)
 
-            const res = await fetch(api_url, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'Cache-Control': 'no-cache',
-                    'Pragma': 'no-cache'
-                },
-                credentials: 'include',
-                signal: AbortSignal.timeout(8000),
+            const res = await fetch(`${API_BASE_URL}/auth/refresh-token`, {
+                method: 'POST',
+                credentials: 'include'
             })
 
             if (res.ok) {
-                const token_claims = await res.json()
-                setUserId(token_claims.user_id)
-                setDeviceId(token_claims.device_id)
-                setUsername(token_claims.username)
-                setEmail(token_claims.email)
-                setRole(token_claims.role)
-                setIsAuthenticated(true)
-            } else {
-                console.log('响应不成功，重定向到登录页')
-                setIsAuthenticated(false)
-                if (typeof window !== 'undefined') {
-                    // 获取当前页面路径作为from参数
-                    const currentPath = window.location.pathname
-                    // 检查当前路径是否已经是登录页面或者在无需授权列表中
-                    if (!noAuthPaths.includes(currentPath)) {
-                        router.replace(`/login?from=${encodeURIComponent(currentPath)}`)
-                    } else {
-                        router.replace('/login')
-                    }
+                // 从响应头获取访问令牌
+                const authHeader = res.headers.get('Authorization');
+                if (authHeader?.startsWith('Bearer ')) {
+                    const accessToken = authHeader.substring(7);
+                    setToken(accessToken);
                 }
+
+                // 如果响应中包含用户信息，也更新它
+                try {
+                    const data = await res.json();
+                    if (data) {
+                        setUserId(data.user_id || data.id || null);
+                        setDeviceId(data.device_id || null);
+                        setUsername(data.username || null);
+                        setEmail(data.email || null);
+                        setRole(data.role || null);
+                    }
+                } catch (e) {
+                    // 如果响应中没有JSON数据，这不是错误，我们已经从头部获取了令牌
+                    console.log('刷新令牌响应中没有JSON数据，这是正常的');
+                }
+
+                setIsAuthenticated(true);
+                return true;
+            } else {
+                handleUnauthorized();
+                return false;
             }
         } catch (error) {
             console.error('刷新 token 详细错误:', {
                 error,
-                message: error instanceof Error ? error.message : '未知错误',
-                api_url
+                message: error instanceof Error ? error.message : '未知错误'
             })
-            setIsAuthenticated(false)
-            if (typeof window !== 'undefined') {
-                // 获取当前页面路径作为from参数
-                const currentPath = window.location.pathname
-                // 检查当前路径是否已经是登录页面或者在无需授权列表中
-                if (!noAuthPaths.includes(currentPath)) {
-                    router.replace(`/login?from=${encodeURIComponent(currentPath)}`)
-                } else {
-                    router.replace('/login')
-                }
-            }
+            handleUnauthorized();
+            return false;
         } finally {
             setIsLoading(false)
         }
     }
 
+    // 处理未授权情况
+    const handleUnauthorized = () => {
+        setIsAuthenticated(false)
+        setToken(null)
+
+        // 清除用户信息
+        setUserId(null)
+        setDeviceId(null)
+        setUsername(null)
+        setEmail(null)
+        setRole(null)
+
+        console.log("认证已失效，清除用户状态")
+
+        // 当前不重定向到登录页，让调用者决定是否重定向
+    }
+
     // 登录获得 Context 更新
     const login = async (username: string, password: string) => {
         console.log("login >>> ", username, password)
-        const res = await fetch(`${API_BASE_URL}/auth/login`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-                'accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ username, password })
-        })
+        setIsLoading(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/auth/login`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password })
+            })
 
-        if (!res.ok) {
-            const errorData = await res.json();
-            throw new Error(errorData.detail || 'Login failed');
+            if (!res.ok) {
+                try {
+                    const errorData = await res.json();
+                    throw new Error(errorData.detail || 'Login failed');
+                } catch (e) {
+                    throw new Error(`Login failed: ${res.status}`);
+                }
+            }
+
+            // 克隆响应以便可以多次读取
+            const responseClone = res.clone();
+
+            // 从响应头获取访问令牌
+            const authHeader = res.headers.get('Authorization');
+            if (authHeader?.startsWith('Bearer ')) {
+                const accessToken = authHeader.substring(7);
+                setToken(accessToken);
+            }
+
+            try {
+                const userData = await responseClone.json()
+                console.log("POST api/auth/login >>> ", userData)
+
+                // 检查是否有嵌套的user对象
+                const userInfo = userData.user || userData
+                console.log("处理后的用户信息 >>> ", userInfo)
+
+                setUserId(userInfo.user_id || userInfo.id)
+                setDeviceId(userInfo.device_id)
+                setUsername(userInfo.username)
+                setEmail(userInfo.email)
+                setRole(userInfo.role)
+                setIsAuthenticated(true)
+
+                console.log("用户信息已设置 >>> ", {
+                    user_id: userInfo.user_id || userInfo.id,
+                    username: userInfo.username,
+                    isAuthenticated: true
+                })
+            } catch (error) {
+                console.error("无法解析用户数据，但令牌已设置:", error);
+                // 即使没有用户数据也设置为已认证状态，因为我们有令牌
+                setIsAuthenticated(true);
+            }
+
+            // 登录后重定向
+            const from = searchParams?.get('from') || '/'
+            router.replace(from)
+        } catch (error: any) {
+            console.error("登录失败:", error);
+            throw error;
+        } finally {
+            setIsLoading(false);
         }
-
-        const token_claims = await res.json()
-        console.log("POST auth/login >>> ", token_claims)
-        setUserId(token_claims.user_id)
-        setDeviceId(token_claims.device_id)
-        setUsername(token_claims.username)
-        setEmail(token_claims.email)
-        setRole(token_claims.role)
-        setIsAuthenticated(true)
-
-        // 登录后重定向
-        const from = searchParams?.get('from') || '/chat'
-        router.replace(from)
     }
 
     // 退出登录
     const logout = async () => {
-        await fetch(`${API_BASE_URL}/auth/logout`, {
-            method: 'POST',
-            credentials: 'include'
-        })
-        setUserId(null)
-        setUsername(null)
-        setEmail(null)
-        setRole(null)
-        setIsAuthenticated(false)
-        router.replace('/login')
+        try {
+            await fetch(`${API_BASE_URL}/auth/logout`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            })
+        } catch (error) {
+            console.error('登出请求失败:', error);
+        } finally {
+            setUserId(null)
+            setUsername(null)
+            setEmail(null)
+            setRole(null)
+            setIsAuthenticated(false)
+            setToken(null)
+            router.replace('/login')
+        }
     }
 
     const changeCurrentPath = async (path: string) => {
@@ -192,8 +351,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return (
         <AuthContext.Provider value={{
             user_id, device_id, username, email, role,
-            isAuthenticated, login, logout, refresh_token,
-            currentPath, changeCurrentPath,
+            isAuthenticated, token, login, logout, refresh_token,
+            currentPath, changeCurrentPath, authFetch, setToken
         }}>
             {children}
         </AuthContext.Provider>

@@ -1,8 +1,6 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { IconProp } from '@fortawesome/fontawesome-svg-core';
-import { faBook, faFileAlt } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '@/context/AuthContext';
 import { useDocument } from '@/context/DocumentContext';
 import { DocumentProvider, Document } from '@/context/DocumentContext';

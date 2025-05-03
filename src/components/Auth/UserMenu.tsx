@@ -3,13 +3,10 @@ import { useSettings } from '@/context/SettingsContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFont, faSun, faMoon, faVolumeUp, faVolumeMute } from '@fortawesome/free-solid-svg-icons';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
+import { useAuth } from '@/context/AuthContext';
 
-interface UserMenuProps {
-    username?: string;
-    onLogout: () => void;
-}
-
-export default function UserMenu({ username, onLogout }: UserMenuProps): JSX.Element {
+export default function UserMenu(): JSX.Element {
+    const { username, logout } = useAuth();
     const [isUserMenuVisible, setIsUserMenuVisible] = useState(false);
     const [isFontSettingVisible, setIsFontSettingVisible] = useState(false);
     const [displayName, setDisplayName] = useState('');
@@ -36,6 +33,7 @@ export default function UserMenu({ username, onLogout }: UserMenuProps): JSX.Ele
 
     // 限制显示的用户名长度
     useEffect(() => {
+        console.log("UserMenu接收到用户名:", username);
         if (username) {
             setDisplayName(username.length > 10 ? `${username.slice(0, 10)}...` : username);
         } else {
@@ -112,7 +110,7 @@ export default function UserMenu({ username, onLogout }: UserMenuProps): JSX.Ele
             <button
                 onClick={() => setIsUserMenuVisible(!isUserMenuVisible)}
                 className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center"
-                title={username}
+                title={username || undefined}
                 style={menuButtonStyle}
             >
                 {displayName}
@@ -182,7 +180,7 @@ export default function UserMenu({ username, onLogout }: UserMenuProps): JSX.Ele
 
                     <hr className="border-gray-200 dark:border-gray-700" />
                     <button
-                        onClick={onLogout}
+                        onClick={logout}
                         className="w-full text-left px-4 py-2 text-red-500 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                         style={menuItemStyle}
                     >

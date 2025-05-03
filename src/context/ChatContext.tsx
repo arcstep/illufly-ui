@@ -5,6 +5,7 @@ import { useApiBase } from '@/hooks/useApiBase'
 import { fetchEventSource } from '@microsoft/fetch-event-source'
 import { handleAuthError, handleApiError } from '@/utils/handleApiError'
 import { useTTS } from './TTSContext'
+import { useAuth } from '@/context/AuthContext'
 
 // 基础消息类型
 export interface Message {
@@ -120,6 +121,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     const [pendingMessages, setPendingMessages] = useState<Message[]>([])
     const [isProcessing, setIsProcessing] = useState<boolean>(false)
     const { API_BASE_URL } = useApiBase();
+    const { token, setToken, authFetch } = useAuth();
 
     // 使用ref保存正在处理的线程ID，用于检测是否有并发切换操作
     const processingThreadRef = useRef<string | null>(null)
@@ -335,16 +337,9 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     const createNewThread = async (): Promise<string> => {
         try {
             console.log('开始创建新线程')
-            const res = await fetch(`${API_BASE_URL}/chat/threads`, {
-                method: 'POST',
-                credentials: 'include'
+            const res = await authFetch(`${API_BASE_URL}/chat/threads`, {
+                method: 'POST'
             })
-
-            // 检查登录状态
-            if (handleAuthError(res.status)) {
-                console.error('授权错误，无法创建新线程')
-                return '' // 已处理认证错误，返回空字符串表示失败
-            }
 
             if (!res.ok) {
                 console.error(`创建新线程失败，状态码: ${res.status}`)
@@ -417,15 +412,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
             await new Promise(resolve => setTimeout(resolve, 100));
 
             console.log(`开始加载线程 ${threadId} 的消息`);
-            const res = await fetch(`${API_BASE_URL}/chat/thread/${threadId}/messages`, {
-                credentials: 'include'
-            });
-
-            // 检查登录状态
-            if (handleAuthError(res.status)) {
-                console.error('授权错误，无法加载消息');
-                return;
-            }
+            const res = await authFetch(`${API_BASE_URL}/chat/thread/${threadId}/messages`);
 
             if (!res.ok) {
                 console.error(`加载消息失败，状态码: ${res.status}`);
@@ -599,9 +586,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     const loadAllThreads = async (): Promise<Thread[]> => {
         try {
             console.log('开始加载所有线程')
-            const res = await fetch(`${API_BASE_URL}/chat/threads`, {
-                credentials: 'include'
-            })
+            const res = await authFetch(`${API_BASE_URL}/chat/threads`);
 
             // 检查登录状态
             if (handleAuthError(res.status)) {
@@ -686,23 +671,41 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         }
 
         try {
+            // 准备请求头，添加授权token
+            const headers: Record<string, string> = {
+                'accept': 'application/json',
+                'Content-Type': 'application/json'
+            };
+
+            // 从上下文获取token添加到Authorization头
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
             await fetchEventSource(`${API_BASE_URL}/chat/complete`, {
                 method: 'POST',
                 credentials: 'include',
-                headers: {
-                    'accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
+                headers,
                 body: JSON.stringify({
                     thread_id: currentThreadId,
                     messages: [{ role: 'user', content }]
                 }),
                 signal: abortController.signal,
                 onopen: async (response) => {
+                    // 处理自动令牌续订
+                    const newToken = response.headers.get('Authorization');
+                    if (newToken?.startsWith('Bearer ')) {
+                        const extractedToken = newToken.substring(7);
+                        setToken(extractedToken);
+                        localStorage.setItem('auth_token', extractedToken);
+                    }
+
                     // 检查登录状态
-                    if (handleAuthError(response.status)) {
+                    if (response.status === 401) {
+                        // 尝试刷新令牌但不重定向
+                        console.error('授权错误，但暂时不重定向');
                         setIsProcessing(false);
-                        throw new Error('认证错误已处理')
+                        throw new Error('认证错误已处理');
                     }
 
                     if (response.status !== 200 || !response.ok) {
@@ -980,15 +983,9 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     // 切换收藏状态
     const toggleFavorite = async (requestId: string) => {
         try {
-            const res = await fetch(`${API_BASE_URL}/chat/messages/${requestId}/favorite`, {
-                method: 'POST',
-                credentials: 'include'
+            const res = await authFetch(`${API_BASE_URL}/chat/messages/${requestId}/favorite`, {
+                method: 'POST'
             })
-
-            // 检查登录状态
-            if (handleAuthError(res.status)) {
-                return // 已处理认证错误
-            }
 
             if (res.ok) {
                 // 更新收藏状态的逻辑可以在这里添加

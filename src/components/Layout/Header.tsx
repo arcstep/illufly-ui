@@ -5,13 +5,9 @@ import { faComments, faBook, faMemory } from '@fortawesome/free-solid-svg-icons'
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import UserMenu from '../Auth/UserMenu';
 import { useRef } from 'react';
+import { useAuth } from '@/context/AuthContext';
 
-interface HeaderProps {
-    username?: string;
-    onLogout: () => void;
-}
-
-export default function Header({ username, onLogout }: HeaderProps) {
+export default function Header() {
     const pathname = usePathname();
     const headerRef = useRef<HTMLElement>(null);
 
@@ -90,7 +86,7 @@ export default function Header({ username, onLogout }: HeaderProps) {
                         </nav>
                     </div>
                     <div className="flex items-center flex-shrink-0" style={userMenuStyle}>
-                        <UserMenu username={username} onLogout={onLogout} />
+                        <UserMenu />
                     </div>
                 </div>
             </div>

@@ -56,10 +56,28 @@ export interface DocumentMetadataUpdate {
 
 // 文档块接口
 export interface DocumentChunk {
-    id: string;
+    document_id: string;
+    chunk_index: number;
     content: string;
-    sequence: number;
-    created_at: string;
+    distance: number;
+    document: {
+        document_id: string;
+        title: string;
+        original_name: string;
+        type: string;
+        created_at: number;
+        extension: string;
+    };
+    metadata: {
+        document_id: string;
+        title: string;
+        document_type: string;
+        index: number;
+        total_chunks: number;
+        next_index: number | null;
+        prev_index: number | null;
+        chunk_title: string;
+    };
 }
 
 // 简化的上下文类型
@@ -148,7 +166,14 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
             });
             if (!response.ok) throw new Error('加载文档切片失败');
             const data = await response.json();
-            return data;
+
+            // 检查返回的数据结构并提取chunks数组
+            if (data && data.success && Array.isArray(data.chunks)) {
+                return data.chunks;
+            } else {
+                console.error('API返回的切片数据格式不正确:', data);
+                return [];
+            }
         } catch (error) {
             console.error('加载文档切片失败:', error);
             return [];

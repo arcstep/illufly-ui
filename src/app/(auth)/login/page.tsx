@@ -3,9 +3,11 @@
 import { useState, JSX, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage(): JSX.Element {
-    const authContext = useAuth();
+    const router = useRouter();
+    const { login, isAuthenticated } = useAuth();
     const { settings } = useSettings();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
@@ -17,13 +19,19 @@ export default function LoginPage(): JSX.Element {
         document.documentElement.classList.add(settings.theme);
     }, [settings.theme]);
 
+    useEffect(() => {
+        if (isAuthenticated) {
+            router.push('/');
+        }
+    }, [isAuthenticated, router]);
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setError('');
         setLoading(true);
 
         try {
-            await authContext.login(username, password);
+            await login(username, password);
         } catch (err: any) {
             console.log("err >>> ", err);
             if (err.response && err.response.data && err.response.data.message) {

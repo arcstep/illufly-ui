@@ -9,7 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { ChatProvider } from '@/context/ChatContext';
 
 function Chat(): JSX.Element {
-    const { isAuthenticated, changeCurrentPath } = useAuth();
+    const { isAuthenticated } = useAuth();
     const [collapsed, setCollapsed] = useState(false);
 
     // 处理历史面板折叠状态变化的回调
@@ -17,9 +17,12 @@ function Chat(): JSX.Element {
         setCollapsed(isCollapsed);
     };
 
-    useEffect(() => {
-        changeCurrentPath('/chat');
-    }, []);
+    // useEffect(() => {
+    //     // 只有在已认证状态下才执行路径更改
+    //     if (isAuthenticated) {
+    //         changeCurrentPath('/chat');
+    //     }
+    // }, [isAuthenticated]); // 添加依赖项
 
     if (!isAuthenticated) return <div>Loading...</div>;
 
@@ -40,11 +43,18 @@ function Chat(): JSX.Element {
 
 // 外层组件只负责提供 Context
 export default function ChatContainer() {
+    const { isAuthenticated } = useAuth();
+
+    // 添加认证检查，未认证时显示加载提示
+    if (!isAuthenticated) {
+        return <div>Loading...</div>;
+    }
+
     return (
         <Suspense fallback={<div>Chat Loading...</div>}>
             <ChatProvider>
                 <Chat />
             </ChatProvider>
         </Suspense>
-    )
+    );
 }

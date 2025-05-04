@@ -6,7 +6,7 @@ import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import { useAuth } from '@/context/AuthContext';
 
 export default function UserMenu(): JSX.Element {
-    const { username, logout } = useAuth();
+    const { user, logout } = useAuth();
     const [isUserMenuVisible, setIsUserMenuVisible] = useState(false);
     const [isFontSettingVisible, setIsFontSettingVisible] = useState(false);
     const [displayName, setDisplayName] = useState('');
@@ -33,13 +33,14 @@ export default function UserMenu(): JSX.Element {
 
     // 限制显示的用户名长度
     useEffect(() => {
-        console.log("UserMenu接收到用户名:", username);
+        console.log("UserMenu接收用户信息:", user);
+        const username = user?.username;
         if (username) {
             setDisplayName(username.length > 10 ? `${username.slice(0, 10)}...` : username);
         } else {
             setDisplayName('未登录');
         }
-    }, [username]);
+    }, [user]);
 
     // 初始化临时字体大小
     useEffect(() => {
@@ -110,7 +111,7 @@ export default function UserMenu(): JSX.Element {
             <button
                 onClick={() => setIsUserMenuVisible(!isUserMenuVisible)}
                 className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center"
-                title={username || undefined}
+                title={displayName || undefined}
                 style={menuButtonStyle}
             >
                 {displayName}

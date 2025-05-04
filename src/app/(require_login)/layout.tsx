@@ -1,21 +1,16 @@
 'use client';
 
 import { Suspense } from 'react'
-import { AuthProvider, useAuth } from '@/context/AuthContext'
+import { AuthProvider } from '@/context/AuthContext'
 import { SettingsProvider } from '@/context/SettingsContext'
 import Header from '@/components/Layout/Header'
 
 // 创建一个内部组件来使用 Context
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
-    // 在这里使用 useAuth，这样可以响应 Context 的变化
-    const { username, logout } = useAuth()
-
+    // 已登录，显示真正的布局
     return (
         <div className="h-screen flex flex-col bg-white dark:bg-gray-900">
-            <Header
-                username={username ?? undefined}
-                onLogout={logout}
-            />
+            <Header />
             <div className="flex-1 overflow-auto">
                 {children}
             </div>
@@ -24,7 +19,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
 }
 
 // 外层组件只负责提供 Context
-export default function ChatLayout({
+export default function RequireLoginLayout({
     children
 }: {
     children: React.ReactNode

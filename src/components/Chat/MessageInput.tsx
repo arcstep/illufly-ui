@@ -222,14 +222,14 @@ export default function MessageInput() {
                         style={textareaStyle}
                         disabled={isSending || isProcessing}
                     />
-                    <button
+                    {/* <button
                         type="button"
                         onClick={() => setShowFileUpload(!showFileUpload)}
                         className="absolute right-2 bottom-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                         disabled={isSending || isProcessing}
                     >
                         <FontAwesomeIcon icon={faPaperclip} />
-                    </button>
+                    </button> */}
                 </div>
                 <button
                     type="submit"
@@ -241,7 +241,7 @@ export default function MessageInput() {
                 </button>
             </div>
 
-            {showFileUpload && (
+            {/* {showFileUpload && (
                 <div
                     className={`mt-2 relative rounded-lg border-2 border-dashed p-4
                     ${isDragging ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30' : 'border-gray-300 dark:border-gray-600'}`}
@@ -295,7 +295,7 @@ export default function MessageInput() {
                         </div>
                     ))}
                 </div>
-            )}
+            )} */}
         </form>
     );
 } 

@@ -17,13 +17,6 @@ function Chat(): JSX.Element {
         setCollapsed(isCollapsed);
     };
 
-    // useEffect(() => {
-    //     // 只有在已认证状态下才执行路径更改
-    //     if (isAuthenticated) {
-    //         changeCurrentPath('/chat');
-    //     }
-    // }, [isAuthenticated]); // 添加依赖项
-
     if (!isAuthenticated) return <div>Loading...</div>;
 
     return (
@@ -51,7 +44,7 @@ export default function ChatContainer() {
     }
 
     return (
-        <Suspense fallback={<div>Chat Loading...</div>}>
+        <Suspense fallback={<div>正在加载文档页面...</div>}>
             <ChatProvider>
                 <Chat />
             </ChatProvider>

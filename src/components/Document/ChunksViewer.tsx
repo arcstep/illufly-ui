@@ -6,12 +6,12 @@ import { DocumentChunk } from '@/context/DocumentContext';
 
 interface ChunksViewerProps {
     documentId: string;
-    hasChunks: boolean;
+    state: string;
+    subState: string;
     onClose: () => void;
-    hasEmbeddings?: boolean;
 }
 
-export default function ChunksViewer({ documentId, hasChunks, onClose, hasEmbeddings = false }: ChunksViewerProps) {
+export default function ChunksViewer({ documentId, state, subState, onClose }: ChunksViewerProps) {
     const [chunks, setChunks] = useState<DocumentChunk[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -24,15 +24,15 @@ export default function ChunksViewer({ documentId, hasChunks, onClose, hasEmbedd
     const [topK, setTopK] = useState(15);
     const [showAdvanced, setShowAdvanced] = useState(false);
 
-    const { loadChunks, generateChunks, searchChunks } = useDocument();
+    const { loadChunks, generateChunks, searchChunks, rollbackDocumentState } = useDocument();
 
     useEffect(() => {
-        if (hasChunks) {
+        if (state === 'chunked' && subState === 'completed') {
             fetchChunks();
         } else {
             setIsLoading(false);
         }
-    }, [documentId, hasChunks]);
+    }, [documentId, state, subState]);
 
     const fetchChunks = async () => {
         setIsLoading(true);
@@ -97,6 +97,12 @@ export default function ChunksViewer({ documentId, hasChunks, onClose, hasEmbedd
         }
     };
 
+    const handleRollback = async () => {
+        setIsLoading(true);
+        await rollbackDocumentState(documentId);
+        onClose();
+    };
+
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[80vh] flex flex-col">
@@ -113,78 +119,6 @@ export default function ChunksViewer({ documentId, hasChunks, onClose, hasEmbedd
                     </button>
                 </div>
 
-                {hasEmbeddings && (
-                    <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                        <form onSubmit={handleSearch} className="w-full">
-                            <div className="relative">
-                                <textarea
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    onKeyDown={handleKeyDown}
-                                    placeholder="输入问题或关键词搜索相似切片... (回车搜索，Shift+回车换行)"
-                                    className="w-full px-4 py-3 pr-12 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent resize-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                                    style={{
-                                        minHeight: '2.5rem',
-                                        maxHeight: 'calc(3 * 1.5rem + 1.5rem)',
-                                        height: 'auto',
-                                        overflowY: searchQuery.split('\n').length > 3 ? 'scroll' : 'hidden'
-                                    }}
-                                    rows={Math.min(3, Math.max(1, searchQuery.split('\n').length))}
-                                />
-                                <button
-                                    type="submit"
-                                    className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none transition-colors duration-200"
-                                    disabled={isSearching || !searchQuery.trim()}
-                                    title="基于语义相似度搜索"
-                                >
-                                    {isSearching ? (
-                                        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                    ) : (
-                                        <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                        </svg>
-                                    )}
-                                </button>
-                            </div>
-
-                            <div className="flex justify-end mt-1">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowAdvanced(!showAdvanced)}
-                                    className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none"
-                                >
-                                    {showAdvanced ? '隐藏高级选项' : '显示高级选项'}
-                                </button>
-                            </div>
-
-                            {showAdvanced && (
-                                <div className="mt-2 grid grid-cols-2 gap-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                                    <div>
-                                        <label className="block text-xs text-gray-600 dark:text-gray-300 mb-1">
-                                            结果数量 (1-50)
-                                        </label>
-                                        <div className="flex items-center">
-                                            <input
-                                                type="range"
-                                                min="1"
-                                                max="50"
-                                                step="1"
-                                                value={topK}
-                                                onChange={(e) => setTopK(parseInt(e.target.value))}
-                                                className="w-full mr-2"
-                                            />
-                                            <span className="text-xs w-10 text-center bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-1 py-0.5 rounded border border-gray-300 dark:border-gray-600">{topK}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </form>
-                    </div>
-                )}
-
                 <div className="flex-1 overflow-auto p-4">
                     {isLoading ? (
                         <div className="flex items-center justify-center h-32">
@@ -192,15 +126,29 @@ export default function ChunksViewer({ documentId, hasChunks, onClose, hasEmbedd
                         </div>
                     ) : error ? (
                         <div className="text-red-500 p-4 text-center">{error}</div>
-                    ) : !hasChunks ? (
-                        <div className="text-center p-8">
-                            <p className="mb-4 text-gray-600 dark:text-gray-300">此文档尚未生成文本切片</p>
-                            <button
-                                onClick={handleGenerateChunks}
-                                className="px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 transition-colors"
-                            >
-                                生成文本切片
-                            </button>
+                    ) : chunks.length === 0 ? (
+                        <div className="text-center p-8 space-y-4">
+                            {subState === 'processing' && <p>文本切片生成中，请稍候...</p>}
+                            {subState === 'failed' && <p>文本切片生成失败，可重试或恢复至上一步</p>}
+                            {chunks.length === 0 && subState === 'none' && <p>尚未生成 文本切片</p>}
+                            <div className="flex justify-center gap-2">
+                                {subState !== 'processing' && (
+                                    <button
+                                        onClick={handleGenerateChunks}
+                                        className="px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600"
+                                    >
+                                        生成 文本切片
+                                    </button>
+                                )}
+                                {subState !== 'completed' && (
+                                    <button
+                                        onClick={handleRollback}
+                                        className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400"
+                                    >
+                                        恢复至上一步
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     ) : hasSearched ? (
                         <div>
@@ -242,8 +190,6 @@ export default function ChunksViewer({ documentId, hasChunks, onClose, hasEmbedd
                                 </div>
                             )}
                         </div>
-                    ) : chunks.length === 0 ? (
-                        <div className="text-center text-gray-500 p-4">没有找到文档切片</div>
                     ) : (
                         <div className="space-y-4">
                             {chunks.map((chunk) => (

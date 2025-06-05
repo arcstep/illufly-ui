@@ -13,7 +13,6 @@ import {
 } from '@/components/Document';
 
 function DocsPageContent() {
-    const { changeCurrentPath } = useAuth();
     const {
         parseTimestamp,
     } = useDateTime();
@@ -53,11 +52,15 @@ function DocsPageContent() {
     const [titleFilter, setTitleFilter] = useState('');
     const [sortOption, setSortOption] = useState<string>('date-desc');
 
+    const { isAuthenticated } = useAuth();
+
+    // 修改useEffect，将isAuthenticated作为依赖
     useEffect(() => {
-        changeCurrentPath('/docs');
-        loadDocuments();
-        getStorageStatus();
-    }, []);
+        if (isAuthenticated) {
+            loadDocuments();
+            getStorageStatus();
+        }
+    }, [isAuthenticated]); // 添加认证状态作为依赖
 
     // 处理文件选择
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {

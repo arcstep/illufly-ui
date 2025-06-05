@@ -61,7 +61,7 @@ export default function Header() {
                                 <FontAwesomeIcon icon={faComments as IconProp} className="mr-1.5 h-4 w-4" />
                                 对话
                             </Link>
-                            <Link
+                            {/* <Link
                                 href="/memory"
                                 className={`inline-flex items-center px-3 py-2 font-medium rounded-md ${isActive('/memory')
                                     ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
@@ -71,8 +71,8 @@ export default function Header() {
                             >
                                 <FontAwesomeIcon icon={faMemory as IconProp} className="mr-1.5 h-4 w-4" />
                                 记忆
-                            </Link>
-                            <Link
+                            </Link> */}
+                            {/* <Link
                                 href="/docs"
                                 className={`inline-flex items-center px-3 py-2 font-medium rounded-md ${isActive('/docs')
                                     ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
@@ -82,7 +82,7 @@ export default function Header() {
                             >
                                 <FontAwesomeIcon icon={faBook as IconProp} className="mr-1.5 h-4 w-4" />
                                 资料库
-                            </Link>
+                            </Link> */}
                         </nav>
                     </div>
                     <div className="flex items-center flex-shrink-0" style={userMenuStyle}>

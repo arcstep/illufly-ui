@@ -95,8 +95,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const authFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
         const headers: Record<string, string> = {
             'Accept': 'application/json',
-            'Content-Type': 'application/json',
             ...(options.headers as Record<string, string> || {})
+        }
+
+        // 检查body是否为FormData，如果不是，才设置Content-Type为application/json
+        if (!(options.body instanceof FormData)) {
+            headers['Content-Type'] = headers['Content-Type'] || 'application/json'
         }
 
         if (token) {
@@ -116,16 +120,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setToken(accessToken)
         }
 
-        // 仅处理 401 错误，且只尝试刷新一次
+        // 处理 401 错误
         if (response.status === 401) {
-            await refreshAccessToken();
+            try {
+                await refreshAccessToken();
 
-            // 使用新的令牌重试请求
-            return await fetch(url, {
-                ...options,
-                headers,
-                credentials: 'include'
-            })
+                // 使用新的令牌构建新的headers
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                // 重试请求
+                return await fetch(url, {
+                    ...options,
+                    headers,
+                    credentials: 'include'
+                });
+            } catch (refreshError) {
+                console.error('刷新令牌失败:', refreshError);
+                throw new Error('身份验证失败');
+            }
         }
 
         return response

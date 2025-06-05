@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 import { useApiBase } from '@/hooks/useApiBase';
 import { useMessage } from '@/hooks/useMessage';
+import { useAuth } from '@/context/AuthContext';
 
 // 文档接口
 export interface Document {
@@ -13,20 +14,27 @@ export interface Document {
     extension: string;
     created_at: number;
     updated_at: number;
-    status: 'active' | 'archived' | 'processing' | 'error';
+
+    // 新状态字段
+    state: string;       // e.g. "init","uploaded","markdowned","chunked","embedded"
+    sub_state: string;   // e.g. "none","processing","completed","failed"
+
     download_url: string | null;
     title: string;
     description: string;
     tags: string[];
-    process_stage?: string;
-    is_processing?: boolean;
-    has_markdown: boolean;
-    has_chunks: boolean;
-    chunks_count?: number;
-    has_embeddings?: boolean;
+
+    // 新增：元数据字段
+    topic_path?: string;
+    summary?: string;
+    is_public?: boolean;
+    allowed_roles?: string[];
+    metadata?: Record<string, any>;
+
     source_type: 'local' | 'remote';
-    source_url: string;
-    [key: string]: any; // 保留扩展字段
+    source_url: string | null;
+    chunks_count?: number;
+    [key: string]: any;
 }
 
 // 存储状态接口
@@ -35,7 +43,7 @@ export interface StorageStatus {
     limit: number;
     available: number;
     usage_percentage: number;
-    file_count: number;
+    document_count: number;
     last_updated: number;
 }
 
@@ -51,6 +59,15 @@ export interface DocumentMetadataUpdate {
     title?: string;
     description?: string;
     tags?: string[];
+
+    // 新增可写字段
+    summary?: string;
+    is_public?: boolean;
+    allowed_roles?: string[];
+    topic_path?: string;
+    metadata?: Record<string, any>;
+
+    // 兼容 extra_fields
     extra_fields?: Record<string, any>;
 }
 
@@ -104,12 +121,15 @@ interface DocumentContextType {
     convertToMarkdown: (document_id: string) => Promise<boolean>;
     generateChunks: (document_id: string) => Promise<boolean>;
     indexDocument: (document_id: string) => Promise<boolean>;
+    moveDocumentToTopic: (document_id: string, target_topic?: string) => Promise<boolean>;
+    rollbackDocumentState: (document_id: string) => Promise<boolean>;
 }
 
 const DocumentContext = createContext<DocumentContextType | undefined>(undefined);
 
 export function DocumentProvider({ children }: { children: ReactNode }) {
     const { API_BASE_URL } = useApiBase();
+    const { authFetch } = useAuth();
     const { showMessage } = useMessage();
 
     // 状态
@@ -124,9 +144,10 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
     const loadDocuments = async (): Promise<Document[]> => {
         setIsLoading(true);
         try {
-            const response = await fetch(`${API_BASE_URL}/documents`, {
-                credentials: 'include'
-            });
+            const response = await authFetch(`${API_BASE_URL}/documents`);
+
+            if (!response.ok) throw new Error('获取文档列表失败');
+
             const data = await response.json();
 
             // 直接使用后端返回数据
@@ -144,10 +165,10 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
     // 加载单个文档
     const loadDocument = async (id: string): Promise<Document | null> => {
         try {
-            const response = await fetch(`${API_BASE_URL}/documents/${id}`, {
-                credentials: 'include'
-            });
+            const response = await authFetch(`${API_BASE_URL}/documents/${id}`);
+
             if (!response.ok) throw new Error('获取文档详情失败');
+
             const data = await response.json();
             setCurrentDocument(data);
             return data;
@@ -161,10 +182,10 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
     // 加载文档切片
     const loadChunks = async (id: string): Promise<DocumentChunk[]> => {
         try {
-            const response = await fetch(`${API_BASE_URL}/documents/${id}/chunks`, {
-                credentials: 'include'
-            });
+            const response = await authFetch(`${API_BASE_URL}/documents/${id}/chunks`);
+
             if (!response.ok) throw new Error('加载文档切片失败');
+
             const data = await response.json();
 
             // 检查返回的数据结构并提取chunks数组
@@ -190,10 +211,13 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
             if (metadata?.description) formData.append('description', metadata.description);
             if (metadata?.tags && metadata.tags.length > 0) formData.append('tags', metadata.tags.join(','));
 
-            const response = await fetch(`${API_BASE_URL}/documents/upload`, {
+            const response = await authFetch(`${API_BASE_URL}/documents/upload`, {
                 method: 'POST',
-                body: formData,
-                credentials: 'include'
+                headers: {
+                    'Accept': 'application/json',
+                    // 注意：不要设置 Content-Type，让浏览器自动设置multipart/form-data边界
+                },
+                body: formData
             });
 
             if (!response.ok) {
@@ -202,7 +226,8 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
             }
 
             const data = await response.json();
-            const fileId = data.id || data.file_id;
+            // 新API返回document_id字段
+            const fileId = data.document_id;
 
             showMessage?.({ type: 'success', content: '文件上传成功' });
 
@@ -231,13 +256,9 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
                 tags: metadata?.tags
             };
 
-            const response = await fetch(`${API_BASE_URL}/documents/bookmark`, {
+            const response = await authFetch(`${API_BASE_URL}/documents/bookmark`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(payload),
-                credentials: 'include'
+                body: JSON.stringify(payload)
             });
 
             if (!response.ok) {
@@ -246,7 +267,8 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
             }
 
             const data = await response.json();
-            const fileId = data.id || data.file_id;
+            // 新API返回document_id字段
+            const fileId = data.document_id;
 
             showMessage?.({ type: 'success', content: '远程文件收藏成功' });
 
@@ -266,9 +288,8 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
     // 删除文档
     const deleteDocument = async (document_id: string): Promise<boolean> => {
         try {
-            const response = await fetch(`${API_BASE_URL}/documents/${document_id}`, {
-                method: 'DELETE',
-                credentials: 'include'
+            const response = await authFetch(`${API_BASE_URL}/documents/${document_id}`, {
+                method: 'DELETE'
             });
 
             if (!response.ok) throw new Error('删除文档失败');
@@ -289,13 +310,9 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
     // 更新文档元数据
     const updateDocumentMetadata = async (id: string, metadata: DocumentMetadataUpdate): Promise<Document | null> => {
         try {
-            const response = await fetch(`${API_BASE_URL}/documents/${id}`, {
+            const response = await authFetch(`${API_BASE_URL}/documents/${id}`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(metadata),
-                credentials: 'include'
+                body: JSON.stringify(metadata)
             });
 
             if (!response.ok) throw new Error('更新文档元数据失败');
@@ -318,9 +335,7 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
     // 下载文档
     const downloadDocument = async (document_id: string): Promise<boolean> => {
         try {
-            const response = await fetch(`${API_BASE_URL}/documents/${document_id}/download`, {
-                credentials: 'include'
-            });
+            const response = await authFetch(`${API_BASE_URL}/documents/${document_id}/download`);
 
             if (!response.ok) throw new Error('下载文档失败');
 
@@ -356,24 +371,27 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
     // 获取存储状态
     const getStorageStatus = async (): Promise<StorageStatus> => {
         try {
-            const response = await fetch(`${API_BASE_URL}/documents/storage/status`, {
-                credentials: 'include'
-            });
-
+            const response = await authFetch(`${API_BASE_URL}/documents/storage/status`);
             if (!response.ok) throw new Error('获取存储状态失败');
-
             const data = await response.json();
-            setStorageStatus(data);
-            return data;
+            const mapped: StorageStatus = {
+                used: data.used,
+                limit: data.limit,
+                available: data.available,
+                usage_percentage: data.usage_percentage,
+                document_count: data.document_count,
+                last_updated: data.last_updated,
+            };
+            setStorageStatus(mapped);
+            return mapped;
         } catch (error) {
             console.error('获取存储状态失败:', error);
-            // 返回默认值
-            const defaultStatus = {
+            const defaultStatus: StorageStatus = {
                 used: 0,
-                limit: 1000 * 1024 * 1024, // 1GB
+                limit: 1000 * 1024 * 1024,
                 available: 1000 * 1024 * 1024,
                 usage_percentage: 0,
-                file_count: 0,
+                document_count: 0,
                 last_updated: Date.now()
             };
             setStorageStatus(defaultStatus);
@@ -390,7 +408,7 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
 
         setIsSearching(true);
         try {
-            let url = `${API_BASE_URL}/documents/search?query=${encodeURIComponent(query)}`;
+            let url = `${API_BASE_URL}/documents/chunks/search?query=${encodeURIComponent(query)}`;
             if (docId) {
                 url += `&document_id=${encodeURIComponent(docId)}`;
             }
@@ -398,9 +416,8 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
                 url += `&limit=${limit}`;
             }
 
-            const response = await fetch(url, {
-                method: 'POST',
-                credentials: 'include'
+            const response = await authFetch(url, {
+                method: 'POST'
             });
 
             if (!response.ok) throw new Error('搜索失败');
@@ -418,9 +435,8 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
     // 将文档转换为Markdown
     const convertToMarkdown = async (document_id: string): Promise<boolean> => {
         try {
-            const response = await fetch(`${API_BASE_URL}/documents/${document_id}/convert`, {
-                method: 'POST',
-                credentials: 'include'
+            const response = await authFetch(`${API_BASE_URL}/documents/${document_id}/convert`, {
+                method: 'POST'
             });
 
             if (!response.ok) throw new Error('转换失败');
@@ -440,9 +456,8 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
     // 文档切片处理
     const generateChunks = async (document_id: string): Promise<boolean> => {
         try {
-            const response = await fetch(`${API_BASE_URL}/documents/${document_id}/chunks`, {
-                method: 'POST',
-                credentials: 'include'
+            const response = await authFetch(`${API_BASE_URL}/documents/${document_id}/chunks`, {
+                method: 'POST'
             });
 
             if (!response.ok) throw new Error('生成切片失败');
@@ -462,9 +477,8 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
     // 添加到向量索引
     const indexDocument = async (document_id: string): Promise<boolean> => {
         try {
-            const response = await fetch(`${API_BASE_URL}/documents/${document_id}/index`, {
-                method: 'POST',
-                credentials: 'include'
+            const response = await authFetch(`${API_BASE_URL}/documents/${document_id}/index`, {
+                method: 'POST'
             });
 
             if (!response.ok) throw new Error('向量索引失败');
@@ -477,6 +491,41 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
         } catch (error) {
             console.error('向量索引失败:', error);
             showMessage?.({ type: 'error', content: '向量索引失败' });
+            return false;
+        }
+    };
+
+    // 新增：移动文档接口
+    const moveDocumentToTopic = async (document_id: string, target_topic?: string): Promise<boolean> => {
+        try {
+            const res = await authFetch(`${API_BASE_URL}/documents/${document_id}/move`, {
+                method: 'POST',
+                body: JSON.stringify({ target_topic })
+            });
+            if (!res.ok) throw new Error('移动失败');
+            showMessage?.({ type: 'success', content: '文档已移动' });
+            await loadDocuments();
+            return true;
+        } catch (error) {
+            console.error('移动文档失败:', error);
+            showMessage?.({ type: 'error', content: '移动文档失败' });
+            return false;
+        }
+    };
+
+    // 回退文档状态
+    const rollbackDocumentState = async (document_id: string): Promise<boolean> => {
+        try {
+            const res = await authFetch(`${API_BASE_URL}/documents/${document_id}/state/rollback`, {
+                method: 'POST'
+            });
+            if (!res.ok) throw new Error('回退失败');
+            showMessage?.({ type: 'success', content: '文档状态已回退' });
+            await loadDocument(document_id);
+            return true;
+        } catch (error) {
+            console.error('回退文档状态失败:', error);
+            showMessage?.({ type: 'error', content: '回退文档状态失败' });
             return false;
         }
     };
@@ -503,6 +552,8 @@ export function DocumentProvider({ children }: { children: ReactNode }) {
                 convertToMarkdown,
                 generateChunks,
                 indexDocument,
+                moveDocumentToTopic,
+                rollbackDocumentState,
             }}
         >
             {children}
